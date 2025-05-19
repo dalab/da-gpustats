@@ -78,10 +78,10 @@ export const FancyBarGauge = ({
  *  - lastUpdated: Date
  *  - warningRange: { min, max } ⇒ yellow zone when curr% ∈ [min, max]
  */
-const StillAlive = ({ lastUpdated, warningRange = { min: 20, max: 240 }}) => {
+const StillAlive = ({ lastUpdated, warningRange = { min: 10, max: 240 }}) => {
   // if the machine was last updated more than 240 minutes ago, it's dead
   const notAlive = dayjs().diff(dayjs(lastUpdated), "minute") > warningRange.max;
-  // if it was last updated less than 60 minutes ago, it's still alive
+  // if it was last updated less than 10 minutes ago, it's still alive
   const isAlive = dayjs().diff(dayjs(lastUpdated), "minute") < warningRange.min;
   // if it's neighter alive nor dead, it is maybe alive
   const maybeAlive = !isAlive && !notAlive;
