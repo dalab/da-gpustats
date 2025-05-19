@@ -27,12 +27,12 @@ export const FancyBarGauge = ({
 
   // Decide bar colour based on thresholds
   let barColour = "bg-green-500";
-  if (percent >= warningRange.min && percent <= warningRange.max) barColour = "bg-yellow-500";
-  if (percent > warningRange.max) barColour = "bg-red-500";
+  if (percent >= warningRange.min && percent < warningRange.max) barColour = "bg-yellow-500";
+  if (percent >= warningRange.max) barColour = "bg-red-500";
 
 
   return (
-    <div className="flex flex-col items-center bg-slate-900 rounded" title={`${currUsage}/${maxUsage} ${unit}`}>
+    <div className="flex flex-col items-center bg-slate-900 rounded" title={`${currUsage}/${maxUsage}${unit}`}>
       {/* gauge */}
       <div className="relative h-12 w-6 overflow-hidden pointer-events-none">
         {/* Filled portion */}
@@ -72,6 +72,31 @@ export const FancyBarGauge = ({
 };
 
 /**
+ * StillAlive
+ * --------------------------------------------------------------
+ * Props:
+ *  - lastUpdated: Date
+ *  - warningRange: { min, max } ⇒ yellow zone when curr% ∈ [min, max]
+ */
+const StillAlive = ({ lastUpdated, warningRange = { min: 20, max: 240 }}) => {
+  // if the machine was last updated more than 240 minutes ago, it's dead
+  const notAlive = dayjs().diff(dayjs(lastUpdated), "minute") > warningRange.max;
+  // if it was last updated less than 60 minutes ago, it's still alive
+  const isAlive = dayjs().diff(dayjs(lastUpdated), "minute") < warningRange.min;
+  // if it's neighter alive nor dead, it is maybe alive
+  const maybeAlive = !isAlive && !notAlive;
+
+  const color = isAlive ? "bg-green-500/50" : notAlive ? "bg-red-500/50" : "bg-yellow-500/50";
+  const display = maybeAlive ? "Maybe alive 🤞" : notAlive ? "Not alive 💀" : "Still alive ✨";
+
+  return (
+    <div className={`text-xs rounded-lg px-2 py-0.5 inline-block mb-1 ${color}`}>
+      {display}
+    </div>
+  );
+};
+
+/**
  * MachineCard
  * --------------------------------------------------------------
  * Props:
@@ -84,8 +109,8 @@ const MachineCard = ({
   machine,
   units = { CPU: "%", GPU: "%", RAM: "%", HDD: "%" },
   warningRanges = {
-    CPU: { min: 60, max: 80 },
-    GPU: { min: 60, max: 80 },
+    CPU: { min: 50, max: 80 },
+    GPU: { min: 50, max: 80 },
     RAM: { min: 70, max: 90 },
     HDD: { min: 70, max: 90 },
   },
@@ -107,6 +132,22 @@ const MachineCard = ({
     const id = setInterval(forceUpdate, 60_000);
     return () => clearInterval(id);
   }, []);
+
+  const isBurning = machine.cpu >= warningRanges.CPU.max || machine.gpu >= warningRanges.GPU.max;
+  const isFull = machine.hdd >= warningRanges.HDD.max || machine.ram >= warningRanges.RAM.max;
+  const isFree = machine.cpu < warningRanges.CPU.min && machine.gpu < warningRanges.GPU.min && machine.ram < warningRanges.RAM.min && machine.hdd < warningRanges.HDD.min;
+  let icon = "🟡";
+  let machineState = "Moderately used";
+  if (isBurning) {
+    icon = "🔥"
+    machineState = "Fully utilized";
+  } else if (isFull) {
+    icon = "🔴";
+    machineState = "Storage full, please clean up!";
+  } else if (isFree) {
+    icon = "🟢";
+    machineState = "Free to use";
+  }
 
   const toggle = () => setCollapsed((prev) => !prev);
 
@@ -156,9 +197,12 @@ const MachineCard = ({
     >
       <div className="flex flex-row justify-between items-start gap-4">
         <div>
-          <h2 className="text-xl font-semibold">{machine.name}</h2>
-          <p className="text-sm text-gray-500" title={formatted}>
-            Last updated: {relative}
+          <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+            <h2 className="text-xl font-semibold flex items-center"><span className="text-base pb-0.5 inline-block" title={machineState}>{icon}</span><span>&nbsp;{machine.name}</span></h2>
+            <StillAlive lastUpdated={machine.timestamp} />
+          </div>
+          <p className="text-sm text-gray-500 mt-1" title={formatted}>
+            Last update: {relative}
           </p>
         </div>
 
@@ -172,7 +216,9 @@ const MachineCard = ({
       </div>
 
       {!collapsed && (
-        <p>Detailed stats</p>
+        <div className="mt-4">
+          <p>Detailed stats</p>
+        </div>
       )}
     </div>
   );
