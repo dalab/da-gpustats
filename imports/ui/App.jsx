@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Meteor } from 'meteor/meteor';
+import { useTracker } from 'meteor/react-meteor-data';
 import {
   DndContext,
   closestCenter,
@@ -14,123 +16,103 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
+import { Machines } from '/imports/api/machines';
 import MachineCard from './components/MachineCard';
 
-/* -------------------------------------------------------------------------- */
-/* 1. Initial data (added a stable `id` for dnd-kit)                          */
-/* -------------------------------------------------------------------------- */
-const initialMachines = [
-  {
-    id: 'machine-1',
-    name: 'Machine 1',
-    timestamp: '2025-05-19 12:00:00',
-    cpu: '25%',
-    gpu: '40%',
-    ram: '60%',
-    hdd: '80%',
-  },
-  {
-    id: 'machine-2',
-    name: 'Machine 2',
-    timestamp: '2025-05-19 12:01:00',
-    cpu: '30%',
-    gpu: '50%',
-    ram: '70%',
-    hdd: '90%',
-  },
-  {
-    id: 'machine-3',
-    name: 'Machine 3',
-    timestamp: '2025-05-19 12:02:00',
-    cpu: '20%',
-    gpu: '30%',
-    ram: '50%',
-    hdd: '70%',
-  },
-  {
-    id: 'machine-4',
-    name: 'Machine 4',
-    timestamp: '2025-05-19 12:03:00',
-    cpu: '35%',
-    gpu: '45%',
-    ram: '65%',
-    hdd: '85%',
-  },
-];
-
-/* -------------------------------------------------------------------------- */
-/* 2. Sortable wrapper around MachineCard                                     */
-/* -------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------ */
+/*  Draggable wrapper                                                 */
+/* ------------------------------------------------------------------ */
 const SortableMachineCard = ({ machine }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: machine.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: machine._id });
 
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
       {...attributes}
       {...listeners}
-      className="cursor-grab active:cursor-grabbing"
+      className="cursor-grab active:cursor-grabbing active:z-10"
     >
       <MachineCard machine={machine} />
     </div>
   );
 };
 
-/* -------------------------------------------------------------------------- */
-/* 3. App with DndContext + SortableContext                                   */
-/* -------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------ */
+/*  Main component                                                    */
+/* ------------------------------------------------------------------ */
 export const App = () => {
-  const [machines, setMachines] = useState(initialMachines);
+  /* -------------------------------------------------------------- */
+  /* 1. Subscribe to the backend                                    */
+  /* -------------------------------------------------------------- */
+  const rawMachines = useTracker(() => {
+    const sub = Meteor.subscribe('machines');
+    if (!sub.ready()) return [];
+    // sorted deterministically (by _id) so order is stable for new installs
+    return Machines.find({}, { sort: { _id: 1 } }).fetch();
+  });
 
-  /* Load saved order from localStorage on init */
-  useEffect(() => {
-    const savedOrder = localStorage.getItem('machineOrder');
-    if (savedOrder) {
-      machineOrder = JSON.parse(savedOrder);
-      idToMachineMap = Object.fromEntries(
-        initialMachines.map((machine) => [machine.id, machine])
-      );
-      const orderedMachines = machineOrder.map((id) => idToMachineMap[id]);
-      setMachines(orderedMachines);
+  /* -------------------------------------------------------------- */
+  /* 2. Local order state (persisted in localStorage)               */
+  /* -------------------------------------------------------------- */
+  const [machineOrder, setMachineOrder] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('machineOrder') || '[]');
+    } catch {
+      return [];
     }
-  }, []);
+  });
 
-  /* Better mobile experience: only start dragging after 5 px movement */
+  // Re-save whenever machineOrder changes
+  useEffect(() => {
+    localStorage.setItem('machineOrder', JSON.stringify(machineOrder));
+  }, [machineOrder]);
+
+  /* -------------------------------------------------------------- */
+  /* 3. Assemble the ordered list                                   */
+  /* -------------------------------------------------------------- */
+  const machines = useMemo(() => {
+    if (!rawMachines.length) return [];
+
+    const map = Object.fromEntries(rawMachines.map((m) => [m._id, m]));
+
+    // 3a. Start with items we have an order for
+    const ordered = machineOrder
+      .map((id) => map[id])
+      .filter(Boolean); // filter out machines that no longer exist
+
+    // 3b. Append any new machines we’ve never seen
+    const leftovers = rawMachines.filter((m) => !machineOrder.includes(m._id));
+
+    return [...ordered, ...leftovers];
+  }, [rawMachines, machineOrder]);
+
+  /* -------------------------------------------------------------- */
+  /* 4. dnd-kit sensors                                             */
+  /* -------------------------------------------------------------- */
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 },
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  const handleDragEnd = (event) => {
-    const { active, over } = event;
-    if (active.id !== over?.id) {
-      setMachines((items) => {
-        const oldIndex = items.findIndex((m) => m.id === active.id);
-        const newIndex = items.findIndex((m) => m.id === over.id);
-        const newOrder = arrayMove(items, oldIndex, newIndex);
-        const machineOrder = newOrder.map((machine) => machine.id);
+  /* -------------------------------------------------------------- */
+  /* 5. Handle drag-end                                             */
+  /* -------------------------------------------------------------- */
+  const handleDragEnd = ({ active, over }) => {
+    if (!over || active.id === over.id) return;
 
-        /* Save the new order to localStorage */
-        localStorage.setItem('machineOrder', JSON.stringify(machineOrder));
-
-        return newOrder;
-      });
-    }
+    setMachineOrder((prev) => {
+      const oldIndex = prev.indexOf(active.id);
+      const newIndex = prev.indexOf(over.id);
+      const next = arrayMove(prev, oldIndex, newIndex);
+      // localStorage is written by the useEffect above
+      return next;
+    });
   };
 
+  /* -------------------------------------------------------------- */
+  /* 6. Render                                                      */
+  /* -------------------------------------------------------------- */
   return (
     <div className="p-4">
       <h1 className="text-3xl font-bold mb-4">Still alive?</h1>
@@ -140,10 +122,13 @@ export const App = () => {
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext items={machines} strategy={rectSortingStrategy}>
+        <SortableContext
+          items={machines.map((m) => m._id)}
+          strategy={rectSortingStrategy}
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {machines.map((machine) => (
-              <SortableMachineCard key={machine.id} machine={machine} />
+              <SortableMachineCard key={machine._id} machine={machine} />
             ))}
           </div>
         </SortableContext>
