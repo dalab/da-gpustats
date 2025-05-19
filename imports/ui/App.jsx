@@ -58,9 +58,10 @@ export const App = () => {
   /* -------------------------------------------------------------- */
   const [machineOrder, setMachineOrder] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('machineOrder') || '[]');
+      return JSON.parse(localStorage.getItem('machineOrder') || 'null');
     } catch {
-      return [];
+      console.error('Failed to parse machineOrder from localStorage:', e);
+      return null;
     }
   });
 
@@ -77,6 +78,13 @@ export const App = () => {
 
     const map = Object.fromEntries(rawMachines.map((m) => [m._id, m]));
 
+    // 3. Check if we have an order in localStorage
+    if (!machineOrder) {
+      // If we don't have an order, use the default order
+      const defaultOrder = rawMachines.map((m) => m._id);
+      setMachineOrder(defaultOrder);
+      return rawMachines;
+    }
     // 3a. Start with items we have an order for
     const ordered = machineOrder
       .map((id) => map[id])
@@ -114,7 +122,7 @@ export const App = () => {
   /* 6. Render                                                      */
   /* -------------------------------------------------------------- */
   return (
-    <div className="p-4">
+    <div className="p-4 bg-slate-900 text-white min-h-screen">
       <h1 className="text-3xl font-bold mb-4">Still alive?</h1>
 
       <DndContext
