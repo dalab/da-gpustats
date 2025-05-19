@@ -55,10 +55,10 @@ function buildSnapshot(doc) {
     name: doc.machineName,
     timestamp: doc.timestamp,
 
-    cpu: `${cpuPct.toFixed(0)}%`,
-    gpu: `${gpuAvg.toFixed(0)}%`,
-    ram: `${ramPct.toFixed(0)}%`,
-    hdd: `${hddPct.toFixed(0)}%`,
+    cpu: cpuPct,
+    gpu: gpuAvg,
+    ram: ramPct,
+    hdd: hddPct,
   };
 }
 
