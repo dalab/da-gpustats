@@ -199,8 +199,8 @@ const MachineCard = ({
     >
       <div className="flex flex-row justify-between items-start gap-4">
         <div>
-          <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-            <h2 className="text-xl font-semibold flex items-center"><span className="text-base pb-0.5 inline-block" title={machineState}>{icon}</span><span>&nbsp;{machine.name}</span></h2>
+          <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1">
+            <h2 className="text-xl font-semibold flex items-center"><span className="text-base inline-block" title={machineState}>{icon}</span><span>&nbsp;{machine.name}</span></h2>
             <StillAlive lastUpdated={machine.timestamp} />
           </div>
           <p className="text-sm text-gray-500 mt-1" title={formattedTimestamp}>
