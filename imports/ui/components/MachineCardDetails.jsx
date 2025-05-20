@@ -26,8 +26,8 @@ const MachineCardDetails = ({ machine }) => {
 
   return (
     <div>
-      <table className="w-full text-sm text-left text-gray-400">
-        <thead className="text-sm text-gray-500 uppercase">
+      <table className="w-full text-sm text-left text-gray-300">
+        <thead className="text-sm text-gray-400 uppercase">
           <tr className="border-b border-gray-700">
             <th scope="col" className="pr-2 pl-1 pb-2 w-6 text-center align-top">GPU</th>
             <th scope="col" className="px-2 pb-2 w-8 text-right align-top">Util</th>
@@ -39,7 +39,7 @@ const MachineCardDetails = ({ machine }) => {
           {machine.gpus.map((gpu, index) => (
             <>
               <tr key={index}>
-                <td className="pr-2 pl-1 pt-2 text-center font-bold text-gray-300">{index}</td>
+                <td className="pr-2 pl-1 pt-2 text-center font-bold text-gray-100">{index}</td>
                 <td className="px-2 pt-2 text-right">{gpu.utilization}%</td>
                 <td className="pr-2 pl-1 pt-2 text-center">
                   <GPUStatus gpu={gpu} />
@@ -52,7 +52,7 @@ const MachineCardDetails = ({ machine }) => {
                 <td className="pr-2 pl-1 pb-1"></td>
                 <td className="px-2 pb-1"></td>
                 <td className="pr-2 pl-1 pb-1"></td>
-                <td className="text-gray-300 text-xs text-right pb-1 pl-2 pr-1">
+                <td className="text-gray-100 text-xs text-right pb-1 pl-2 pr-1">
                   {(gpu.users.length >= 0) && (
                     <p className="mt-1 mb-1">{gpu.users.join(", ")}</p>
                   )}

@@ -218,7 +218,7 @@ const MachineCard = ({
             <StillAlive lastUpdated={machine.timestamp} />
           </div>
 
-          <p className="text-xs text-gray-500 mt-1" title={formattedTimestamp}>
+          <p className="text-xs text-gray-400 mt-1" title={formattedTimestamp}>
             Last update: {relativeTimestamp}
           </p>
 
