@@ -36,17 +36,9 @@ export const FancyBarGauge = ({
   if (fillPct >= warningRange.min && fillPct < warningRange.max) barColour = "bg-yellow-500";
   if (fillPct >= warningRange.max) barColour = "bg-red-500";
 
-
   return (
     <div className="flex flex-col items-center rounded" title={title}>
-      {/* gauge */}
       <div className="relative h-12 w-6 overflow-hidden pointer-events-none">
-        {/* Filled portion */}
-        {/* <div
-          className={`absolute bottom-0 left-0 w-full ${barColour}`}
-          style={{ height: `${Math.min(Math.max(fillPct, 0), 100)}%` }}
-        /> */}
-        {/* Separators overlay */}
         <div className="flex flex-col-reverse gap-[1px] h-full">
           {[...Array(sections)]
               .map((_, i) => Math.min(Math.max((fillPct - 100*sectionHeight*i) / sectionHeight, 0), 100))
@@ -139,7 +131,7 @@ const MachineCard = ({
   const { icon, machineState } = useMemo(() => {
     const isBurning = summary.cpu.util >= warningRanges.CPU.max || summary.gpu.util >= warningRanges.GPU.max;
     const isFull = summary.hdd.util >= warningRanges.HDD.max || summary.ram.util >= warningRanges.RAM.max;
-    const isFree = summary.cpu.util < warningRanges.CPU.min && summary.gpu.util < warningRanges.GPU.min && summary.ram.util < warningRanges.RAM.min && machine.hdd < warningRanges.HDD.min;
+    const isFree = summary.cpu.util < warningRanges.CPU.min && summary.gpu.util < warningRanges.GPU.min && summary.ram.util < warningRanges.RAM.min && summary.hdd.util < warningRanges.HDD.min;
     let icon = "🟡";
     let machineState = "Moderately used";
     if (isBurning) {
