@@ -29,7 +29,7 @@ Machines.allow({
 /*  3. Publication — send ONLY the latest log per machine             */
 /* ------------------------------------------------------------------ */
 if (Meteor.isServer) {
-  Meteor.publish('machines', function () {
+  Meteor.publish('machines', async function () {
     const self = this;
     const latestSent = new Map();            // machineId → timestamp
 
@@ -84,7 +84,8 @@ if (Meteor.isServer) {
     /* -------------------------------------------------------------- */
     /* Live updates (observeChanges is sync but we call async helpers)*/
     /* -------------------------------------------------------------- */
-    const handle = MachineLogs.find().observeChanges({
+    const cursor = MachineLogs.find({});
+    const handle = await cursor.observeChangesAsync({
       added(_id, fields) {
         // fields contains machineId already
         sendLatestSnapshot(fields.machineId).catch(console.error);
