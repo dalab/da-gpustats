@@ -1,8 +1,17 @@
-import React from "react";
+import React, { useMemo } from "react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
+import { getMachineSummary } from "/imports/utils/summary"; 
+
 dayjs.extend(relativeTime);
+
+const DEFAULT_WARNING_RANGES = {
+  CPU: { min: 50, max: 80 },
+  GPU: { min: 50, max: 80 },
+  RAM: { min: 70, max: 90 },
+  HDD: { min: 70, max: 90 },
+};
 
 /**
  * FancyBarGauge – vertical bar gauge for resource usage
@@ -15,47 +24,44 @@ dayjs.extend(relativeTime);
  */
 export const FancyBarGauge = ({
   name,
-  currUsage = 0,
-  maxUsage = 100,
-  unit = "%",
+  fillPct = 0,
+  title = null,
   warningRange = { min: 60, max: 80 },
   sections = 5,
 }) => {
-  const percent = maxUsage ? Math.ceil((currUsage / maxUsage) * 100) : 0;
-
-  sectionHeight = 1.0 / sections;
+  const sectionHeight = 1.0 / sections;
 
   // Decide bar colour based on thresholds
   let barColour = "bg-green-500";
-  if (percent >= warningRange.min && percent < warningRange.max) barColour = "bg-yellow-500";
-  if (percent >= warningRange.max) barColour = "bg-red-500";
+  if (fillPct >= warningRange.min && fillPct < warningRange.max) barColour = "bg-yellow-500";
+  if (fillPct >= warningRange.max) barColour = "bg-red-500";
 
 
   return (
-    <div className="flex flex-col items-center bg-slate-900 rounded" title={`${currUsage}/${maxUsage}${unit}`}>
+    <div className="flex flex-col items-center rounded" title={title}>
       {/* gauge */}
       <div className="relative h-12 w-6 overflow-hidden pointer-events-none">
         {/* Filled portion */}
         {/* <div
           className={`absolute bottom-0 left-0 w-full ${barColour}`}
-          style={{ height: `${Math.min(Math.max(percent, 0), 100)}%` }}
+          style={{ height: `${Math.min(Math.max(fillPct, 0), 100)}%` }}
         /> */}
         {/* Separators overlay */}
         <div className="flex flex-col-reverse gap-[1px] h-full">
           {[...Array(sections)]
-              .map((_, i) => Math.min(Math.max((percent - 100*sectionHeight*i) / sectionHeight, 0), 100))
+              .map((_, i) => Math.min(Math.max((fillPct - 100*sectionHeight*i) / sectionHeight, 0), 100))
               .map((fillPct, i) => (
             <div
               key={i}
               className={`w-full relative h-1 flex-grow bg-slate-700`}
             >
               <div
-                className={`absolute bottom-0 left-0 w-full border-t-white/10 ${barColour} ${fillPct > 0 ? ('border-b-[1px] border-b-black/5 ' + (fillPct >= 100 ? 'border-t-[3px]' : 'border-t-[1px]')) : ''}`}
+                className={`absolute bottom-0 left-0 w-full border-t-white/10 ${barColour} ${fillPct > 0 ? ('border-b-[1px] border-b-black/5 ' + (fillPct >= 100 ? 'border-t-[2px]' : 'border-t-[1px]')) : ''}`}
                 style={{ height: `${fillPct}%` }}
               />
               {fillPct >= 100 && (
                 <div
-                  className={`absolute inset-0 border-t-1 border-t-white/20`}
+                  className={`absolute inset-0 border-t-1 border-t-white/15`}
                 />
               )}
             </div>
@@ -65,7 +71,7 @@ export const FancyBarGauge = ({
       </div>
 
       {/* text labels */}
-      <span className="mt-1 text-white font-mono text-xs">{percent.toFixed(0)}%</span>
+      <span className="mt-1 text-white font-mono text-xs">{fillPct.toFixed(0)}%</span>
       <span className="text-white font-mono text-[11px]">{name}</span>
     </div>
   );
@@ -107,20 +113,17 @@ const StillAlive = ({ lastUpdated, warningRange = { min: 10, max: 240 }}) => {
  */
 const MachineCard = ({
   machine,
-  units = { CPU: "%", GPU: "%", RAM: "%", HDD: "%" },
-  warningRanges = {
-    CPU: { min: 50, max: 80 },
-    GPU: { min: 50, max: 80 },
-    RAM: { min: 70, max: 90 },
-    HDD: { min: 70, max: 90 },
-  },
-  maxUsage = { CPU: 100, GPU: 100, RAM: 100, HDD: 100 },
+  warningRanges = DEFAULT_WARNING_RANGES,
 }) => {
   // Persist collapsed state in localStorage, keyed by machine._id
   const [collapsed, setCollapsed] = React.useState(() => {
     if (typeof window === "undefined") return false; // SSR safeguard
     return localStorage.getItem(`machine-card-collapsed-${machine._id}`) === "true";
   });
+
+  const summary = useMemo(() => {
+    return getMachineSummary(machine);
+  }, [machine]);
 
   React.useEffect(() => {
     localStorage.setItem(`machine-card-collapsed-${machine._id}`, collapsed);
@@ -133,62 +136,61 @@ const MachineCard = ({
     return () => clearInterval(id);
   }, []);
 
-  const isBurning = machine.cpu >= warningRanges.CPU.max || machine.gpu >= warningRanges.GPU.max;
-  const isFull = machine.hdd >= warningRanges.HDD.max || machine.ram >= warningRanges.RAM.max;
-  const isFree = machine.cpu < warningRanges.CPU.min && machine.gpu < warningRanges.GPU.min && machine.ram < warningRanges.RAM.min && machine.hdd < warningRanges.HDD.min;
-  let icon = "🟡";
-  let machineState = "Moderately used";
-  if (isBurning) {
-    icon = "🔥"
-    machineState = "Fully utilized";
-  } else if (isFull) {
-    icon = "🔴";
-    machineState = "Storage full, please clean up!";
-  } else if (isFree) {
-    icon = "🟢";
-    machineState = "Free to use";
-  }
+  const { icon, machineState } = useMemo(() => {
+    const isBurning = summary.cpu.util >= warningRanges.CPU.max || summary.gpu.util >= warningRanges.GPU.max;
+    const isFull = summary.hdd.util >= warningRanges.HDD.max || summary.ram.util >= warningRanges.RAM.max;
+    const isFree = summary.cpu.util < warningRanges.CPU.min && summary.gpu.util < warningRanges.GPU.min && summary.ram.util < warningRanges.RAM.min && machine.hdd < warningRanges.HDD.min;
+    let icon = "🟡";
+    let machineState = "Moderately used";
+    if (isBurning) {
+      icon = "🔥"
+      machineState = "Fully utilized";
+    } else if (isFull) {
+      icon = "🔴";
+      machineState = "Storage full, please clean up!";
+    } else if (isFree) {
+      icon = "🟢";
+      machineState = "Free to use";
+    }
+    return { icon, machineState };
+  }, [summary, warningRanges, machine.hdd]);
 
   const toggle = () => setCollapsed((prev) => !prev);
 
-  const relative = dayjs(machine.timestamp).fromNow();
-  const formatted = dayjs(machine.timestamp).format("D MMM, HH:mm");
+  const relativeTimestamp = dayjs(machine.timestamp).fromNow();
+  const formattedTimestamp = dayjs(machine.timestamp).format("D MMM, HH:mm");
 
   // Build resources using defaults & machine values
   const resources = [
     {
       key: "cpu",
       name: "CPU",
-      currUsage: machine.cpu,
-      maxUsage: maxUsage.CPU ?? 100,
-      unit: units.CPU ?? "%",
+      title: summary.cpu.display,
+      fillPct: summary.cpu.util,
       warningRange: warningRanges.CPU,
     },
     {
       key: "gpu",
       name: "GPU",
-      currUsage: machine.gpu,
-      maxUsage: maxUsage.GPU ?? 100,
-      unit: units.GPU ?? "%",
+      title: summary.gpu.display,
+      fillPct: summary.gpu.util,
       warningRange: warningRanges.GPU,
     },
     {
       key: "ram",
       name: "RAM",
-      currUsage: machine.ram,
-      maxUsage: maxUsage.RAM ?? 100,
-      unit: units.RAM ?? "%",
+      title: summary.ram.display,
+      fillPct: summary.ram.util,
       warningRange: warningRanges.RAM,
     },
     {
       key: "hdd",
       name: "HDD",
-      currUsage: machine.hdd,
-      maxUsage: maxUsage.HDD ?? 100,
-      unit: units.HDD ?? "%",
+      title: summary.hdd.display,
+      fillPct: summary.hdd.util,
       warningRange: warningRanges.HDD,
     },
-  ].filter((r) => r.currUsage !== undefined && r.currUsage !== null);
+  ];
 
   return (
     <div
@@ -201,8 +203,8 @@ const MachineCard = ({
             <h2 className="text-xl font-semibold flex items-center"><span className="text-base pb-0.5 inline-block" title={machineState}>{icon}</span><span>&nbsp;{machine.name}</span></h2>
             <StillAlive lastUpdated={machine.timestamp} />
           </div>
-          <p className="text-sm text-gray-500 mt-1" title={formatted}>
-            Last update: {relative}
+          <p className="text-sm text-gray-500 mt-1" title={formattedTimestamp}>
+            Last update: {relativeTimestamp}
           </p>
         </div>
 

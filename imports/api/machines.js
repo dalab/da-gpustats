@@ -24,43 +24,6 @@ Machines.allow({
   remove: () => false,
 });
 
-/* ------------------------------------------------------------------ */
-/*  2. Helper — build the aggregated snapshot expected by the UI      */
-/* ------------------------------------------------------------------ */
-function buildSnapshot(doc) {
-  const gpuAvg =
-    doc.gpus.length === 0
-      ? 0
-      : doc.gpus.reduce((sum, g) => sum + g.utilization, 0) /
-        doc.gpus.length;
-
-  const cpuPct =
-    doc.cpu.nproc === 0 ? 0 : (doc.cpu.load_avg / doc.cpu.nproc) * 100;
-
-  const ramPct =
-    doc.cpu.memory_total === 0
-      ? 0
-      : (doc.cpu.memory_used / doc.cpu.memory_total) * 100;
-
-  const hddPct =
-    doc.cpu.storage_total === 0
-      ? 0
-      : (doc.cpu.storage_used / doc.cpu.storage_total) * 100;
-
-  return {
-    /* stable key used on the client for sorting / local-storage order */
-    _id: doc.machineId,
-
-    /* data the UI expects */
-    name: doc.machineName,
-    timestamp: doc.timestamp,
-
-    cpu: cpuPct,
-    gpu: gpuAvg,
-    ram: ramPct,
-    hdd: hddPct,
-  };
-}
 
 /* ------------------------------------------------------------------ */
 /*  3. Publication — send ONLY the latest log per machine             */
@@ -76,6 +39,7 @@ if (Meteor.isServer) {
         { machineId },
         { sort: { timestamp: -1 } }
       );
+
       if (!newest) {
         // No log left → remove the snapshot completely
         if (latestSent.has(machineId)) {
@@ -85,11 +49,10 @@ if (Meteor.isServer) {
         return;
       }
 
-      const snap = buildSnapshot(newest);
       if (latestSent.has(machineId)) {
-        self.changed('machines', machineId, snap);
+        self.changed('machines', machineId, newest);
       } else {
-        self.added('machines', machineId, snap);
+        self.added('machines', machineId, newest);
       }
       latestSent.set(machineId, newest.timestamp);
     };
@@ -109,8 +72,7 @@ if (Meteor.isServer) {
       }
 
       for (const doc of firstOfEach.values()) {
-        const snap = buildSnapshot(doc);
-        self.added('machines', doc.machineId, snap);
+        self.added('machines', doc.machineId, doc);
         latestSent.set(doc.machineId, doc.timestamp);
       }
       self.ready();
@@ -127,13 +89,13 @@ if (Meteor.isServer) {
         // fields contains machineId already
         sendLatestSnapshot(fields.machineId).catch(console.error);
       },
-      changed(id) {
-        MachineLogs.findOneAsync(id)
+      changed(_id) {
+        MachineLogs.findOneAsync(_id)
           .then((doc) => doc && sendLatestSnapshot(doc.machineId))
           .catch(console.error);
       },
-      removed(id) {
-        MachineLogs.findOneAsync(id)
+      removed(_id) {
+        MachineLogs.findOneAsync(_id)
           .then((doc) => doc && sendLatestSnapshot(doc.machineId))
           .catch(console.error);
       },

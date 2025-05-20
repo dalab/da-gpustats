@@ -24,7 +24,7 @@ import MachineCard from './components/MachineCard';
 /* ------------------------------------------------------------------ */
 const SortableMachineCard = ({ machine }) => {
   const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: machine._id });
+    useSortable({ id: machine.machineId });
 
   return (
     <div
@@ -39,23 +39,18 @@ const SortableMachineCard = ({ machine }) => {
   );
 };
 
-/* ------------------------------------------------------------------ */
-/*  Main component                                                    */
-/* ------------------------------------------------------------------ */
+
 export const App = () => {
   /* -------------------------------------------------------------- */
-  /* 1. Subscribe to the backend                                    */
+  /* Machine logs                                                   */
   /* -------------------------------------------------------------- */
   const rawMachines = useTracker(() => {
     const sub = Meteor.subscribe('machines');
     if (!sub.ready()) return [];
-    // sorted deterministically (by _id) so order is stable for new installs
-    return Machines.find({}, { sort: { _id: 1 } }).fetch();
+    // sorted deterministically (by machineId) so order is stable for new installs
+    return Machines.find({}, { sort: { machineId: 1 } }).fetch();
   });
 
-  /* -------------------------------------------------------------- */
-  /* 2. Local order state (persisted in localStorage)               */
-  /* -------------------------------------------------------------- */
   const [machineOrder, setMachineOrder] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('machineOrder') || 'null');
@@ -70,48 +65,42 @@ export const App = () => {
     localStorage.setItem('machineOrder', JSON.stringify(machineOrder));
   }, [machineOrder]);
 
-  /* -------------------------------------------------------------- */
-  /* 3. Assemble the ordered list                                   */
-  /* -------------------------------------------------------------- */
   const machines = useMemo(() => {
     if (!rawMachines.length) return [];
 
-    const map = Object.fromEntries(rawMachines.map((m) => [m._id, m]));
+    const map = Object.fromEntries(rawMachines.map((m) => [m.machineId, m]));
 
-    // 3. Check if we have an order in localStorage
+    // Check if we have an order in localStorage
     if (!machineOrder) {
       // If we don't have an order, use the default order
-      const defaultOrder = rawMachines.map((m) => m._id);
+      const defaultOrder = rawMachines.map((m) => m.machineId);
       setMachineOrder(defaultOrder);
       return rawMachines;
     }
-    // 3a. Start with items we have an order for
+    // Start with items we have an order for
     const ordered = machineOrder
       .map((id) => map[id])
       .filter(Boolean); // filter out machines that no longer exist
 
-    // 3b. Append any new machines we’ve never seen
-    const leftovers = rawMachines.filter((m) => !machineOrder.includes(m._id));
+    // Append any new machines we’ve never seen
+    const leftovers = rawMachines.filter((m) => !machineOrder.includes(m.machineId));
 
     return [...ordered, ...leftovers];
   }, [rawMachines, machineOrder]);
 
   /* -------------------------------------------------------------- */
-  /* 4. dnd-kit sensors                                             */
+  /* Drag-and-drop                                                  */
   /* -------------------------------------------------------------- */
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  /* -------------------------------------------------------------- */
-  /* 5. Handle drag-end                                             */
-  /* -------------------------------------------------------------- */
   const handleDragEnd = ({ active, over }) => {
-    if (!over || active.id === over.id) return;
+    if (!over || active.machineId === over.machineId) return;
 
     setMachineOrder((prev) => {
-      const oldIndex = prev.indexOf(active.id);
-      const newIndex = prev.indexOf(over.id);
+      const oldIndex = prev.indexOf(active.machineId);
+      const newIndex = prev.indexOf(over.machineId);
       const next = arrayMove(prev, oldIndex, newIndex);
       // localStorage is written by the useEffect above
       return next;
@@ -119,10 +108,10 @@ export const App = () => {
   };
 
   /* -------------------------------------------------------------- */
-  /* 6. Render                                                      */
+  /* Render                                                         */
   /* -------------------------------------------------------------- */
   return (
-    <div className="p-4 bg-slate-900 text-white min-h-screen">
+    <div className="p-4 bg-gray-900 text-white font-mono min-h-screen">
       <h1 className="text-3xl font-bold mb-4">Still alive?</h1>
 
       <DndContext
@@ -131,12 +120,12 @@ export const App = () => {
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={machines.map((m) => m._id)}
+          items={machines.map((m) => m.machineId)}
           strategy={rectSortingStrategy}
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {machines.map((machine) => (
-              <SortableMachineCard key={machine._id} machine={machine} />
+              <SortableMachineCard key={machine.machineId} machine={machine} />
             ))}
           </div>
         </SortableContext>

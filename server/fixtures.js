@@ -13,7 +13,7 @@ Meteor.startup(async () => {
       /* Machine 1 --------------------------------------------------- */
       {
         machineId: 'machine-1',
-        machineName: 'Machine 1',
+        name: 'Machine 1',
         timestamp: new Date(now),
         gpus: [
           {
@@ -49,7 +49,7 @@ Meteor.startup(async () => {
       /* Machine 2 --------------------------------------------------- */
       {
         machineId: 'machine-2',
-        machineName: 'Machine 2',
+        name: 'Machine 2',
         timestamp: new Date(now - 30_000),
         gpus: [
           {
@@ -76,7 +76,7 @@ Meteor.startup(async () => {
       /* Machine 3 --------------------------------------------------- */
       {
         machineId: 'machine-3',
-        machineName: 'Machine 3',
+        name: 'Machine 3',
         timestamp: new Date(now - 60_000),
         gpus: [],
         cpu: {
@@ -93,7 +93,7 @@ Meteor.startup(async () => {
       /* Machine 4 --------------------------------------------------- */
       {
         machineId: 'machine-4',
-        machineName: 'Machine 4',
+        name: 'Machine 4',
         timestamp: new Date(now - 90_000),
         gpus: [
           {
