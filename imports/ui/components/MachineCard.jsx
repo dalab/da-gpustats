@@ -205,7 +205,7 @@ const MachineCard = ({
 
   return (
     <div
-      className="border-[1px] border-white/15 backdrop-blur-xl bg-linear-45 from-zinc-900/30 to-zinc-600/30 rounded-lg p-3 shadow-md cursor-pointer select-none transition-all duration-200"
+      className="border-[1px] border-white/15 backdrop-blur-xl bg-linear-45 from-zinc-900/30 to-zinc-600/20 rounded-lg p-3 shadow-md cursor-pointer select-none transition-all duration-200"
       onClick={toggle}
     >
       <div className="flex flex-row justify-between items-stretch gap-4">
@@ -237,7 +237,7 @@ const MachineCard = ({
       </div>
 
       {!collapsed && (
-        <div className="mt-4">
+        <div className="mt-4 mb-1">
           <MachineCardDetails machine={machine} />
         </div>
       )}

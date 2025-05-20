@@ -112,7 +112,7 @@ export const App = () => {
   /* -------------------------------------------------------------- */
   return (
     <div className="p-4 bg-zinc-900 text-zinc-100 font-mono min-h-screen">
-      <h1 className="text-3xl font-bold mb-4">Still alive?</h1>
+      <h1 className="text-3xl font-bold mb-4 text-zinc-300">Still alive?</h1>
 
       <DndContext
         sensors={sensors}
