@@ -111,7 +111,7 @@ export const App = () => {
   /* Render                                                         */
   /* -------------------------------------------------------------- */
   return (
-    <div className="p-4 bg-gray-900 text-gray-100 font-mono min-h-screen">
+    <div className="p-4 bg-zinc-900 text-zinc-100 font-mono min-h-screen">
       <h1 className="text-3xl font-bold mb-4">Still alive?</h1>
 
       <DndContext

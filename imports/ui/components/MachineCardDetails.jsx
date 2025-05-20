@@ -26,9 +26,9 @@ const MachineCardDetails = ({ machine }) => {
 
   return (
     <div>
-      <table className="w-full text-sm text-left text-gray-300">
-        <thead className="text-sm text-gray-400 uppercase">
-          <tr className="border-b border-gray-700">
+      <table className="w-full text-sm text-left text-zinc-300">
+        <thead className="text-sm text-zinc-400 uppercase">
+          <tr className="border-b border-zinc-700">
             <th scope="col" className="pr-2 pl-1 pb-2 w-6 text-center align-top">GPU</th>
             <th scope="col" className="px-2 pb-2 w-8 text-right align-top">Util</th>
             <th scope="col" className="px-2 pb-2 w-8 text-center align-top"></th>
@@ -39,7 +39,7 @@ const MachineCardDetails = ({ machine }) => {
           {machine.gpus.map((gpu, index) => (
             <>
               <tr key={index}>
-                <td className="pr-2 pl-1 pt-2 text-center font-bold text-gray-100">{index}</td>
+                <td className="pr-2 pl-1 pt-2 text-center font-bold">{index}</td>
                 <td className="px-2 pt-2 text-right">{gpu.utilization}%</td>
                 <td className="pr-2 pl-1 pt-2 text-center">
                   <GPUStatus gpu={gpu} />
@@ -48,11 +48,11 @@ const MachineCardDetails = ({ machine }) => {
                   <p>{formatBytes(gpu.memory_used)} / {formatBytes(gpu.memory_total)}</p>
                 </td>
               </tr>
-              <tr className="border-b border-gray-700">
+              <tr className="border-b border-zinc-700">
                 <td className="pr-2 pl-1 pb-1"></td>
                 <td className="px-2 pb-1"></td>
                 <td className="pr-2 pl-1 pb-1"></td>
-                <td className="text-gray-100 text-xs text-right pb-1 pl-2 pr-1">
+                <td className="text-zinc-300/90 text-xs text-right pb-1 pl-2 pr-1">
                   {(gpu.users.length >= 0) && (
                     <p className="mt-1 mb-1">{gpu.users.join(", ")}</p>
                   )}
@@ -63,7 +63,7 @@ const MachineCardDetails = ({ machine }) => {
         </tbody>
       </table>
 
-      <div className="flex flex-row flex-wrap gap-x-6 gap-y-1 mt-5 text-xs text-gray-400 px-1">
+      <div className="flex flex-row flex-wrap gap-x-6 gap-y-1 mt-5 text-xs text-zinc-400 px-1">
         <p className="">CPU: {machine.cpu.load_avg} / {machine.cpu.nproc}</p>
         <p className="">RAM: {formatBytes(machine.cpu.memory_used)} / {formatBytes(machine.cpu.memory_total)}</p>
         <p className="">HDD: {formatBytes(machine.cpu.storage_used)} / {formatBytes(machine.cpu.storage_total)}</p>

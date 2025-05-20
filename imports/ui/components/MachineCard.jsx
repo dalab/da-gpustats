@@ -34,14 +34,14 @@ export const FancyBarGauge = ({
 
   return (
     <div className="flex flex-col items-center rounded" title={title}>
-      <div className="relative h-20 w-6 overflow-hidden pointer-events-none">
+      <div className="relative flex-1 min-h-20 w-6 overflow-hidden pointer-events-none">
         <div className="flex flex-col-reverse gap-[1px] h-full">
           {[...Array(sections)]
               .map((_, i) => Math.min(Math.max((fillPct - 100*sectionHeight*i) / sectionHeight, 0), 100))
               .map((fillPct, i) => (
             <div
               key={i}
-              className={`w-full relative h-1 flex-grow bg-gray-700`}
+              className={`w-full relative h-1 flex-grow bg-zinc-700`}
             >
               <div
                 className={`absolute bottom-0 left-0 w-full border-t-white/10 ${barColour} ${fillPct > 0 ? ('border-b-[1px] border-b-black/5 ' + (fillPct >= 100 ? 'border-t-[2px]' : 'border-t-[1px]')) : ''}`}
@@ -54,13 +54,13 @@ export const FancyBarGauge = ({
               )}
             </div>
           ))}
-          {/* <div className="absolute inset-0 pointer-events-none bg-gray-900" /> */}
+          {/* <div className="absolute inset-0 pointer-events-none bg-zinc-900" /> */}
         </div>
       </div>
 
       {/* text labels */}
-      <span className="mt-1 text-gray-200 font-mono text-xs">{fillPct.toFixed(0)}%</span>
-      <span className="text-gray-300/90 font-mono text-[11px]">{name}</span>
+      <span className="mt-1 text-zinc-200 font-mono text-xs">{fillPct.toFixed(0)}%</span>
+      <span className="text-zinc-300/90 font-mono text-[11px]">{name}</span>
     </div>
   );
 };
@@ -109,10 +109,10 @@ const GPUStatusBar = ({ gpus }) => {
           ) : (
             <div
               key={index}
-              className={`text-xs rounded-lg px-2 py-0.5 bg-radial-[at_50%_60%] from-gray-400/50 to-gray-500/50 inset-shadow-[0_1px_2.5px_rgba(0,0,0,0.3)]`}
+              className={`text-xs rounded-lg px-2 py-0.5 bg-radial-[at_50%_60%] from-zinc-400/50 to-zinc-500/50 inset-shadow-[0_1px_2.5px_rgba(0,0,0,0.3)]`}
               title={`GPU ${index} in use`}
             >
-              <span className="text-xs font-bold opacity-70 text-gray-300">{index}</span>
+              <span className="text-xs font-bold opacity-70 text-zinc-300">{index}</span>
             </div>
           )
         );
@@ -205,10 +205,10 @@ const MachineCard = ({
 
   return (
     <div
-      className="border-[1px] border-white/15 backdrop-blur-xl bg-linear-45 from-gray-900/30 to-gray-600/30 rounded-lg p-4 shadow-md cursor-pointer select-none transition-all duration-200"
+      className="border-[1px] border-white/15 backdrop-blur-xl bg-linear-45 from-zinc-900/30 to-zinc-600/30 rounded-lg p-3 shadow-md cursor-pointer select-none transition-all duration-200"
       onClick={toggle}
     >
-      <div className="flex flex-row justify-between items-start gap-4">
+      <div className="flex flex-row justify-between items-stretch gap-4">
         <div>
           <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1">
             <h2 className="text-xl font-semibold flex items-center">
@@ -218,11 +218,11 @@ const MachineCard = ({
             <StillAlive lastUpdated={machine.timestamp} />
           </div>
 
-          <p className="text-xs text-gray-400 mt-1" title={formattedTimestamp}>
+          <p className="text-xs text-zinc-400 mt-1" title={formattedTimestamp}>
             Last update: {relativeTimestamp}
           </p>
 
-          <div className="mt-2">
+          <div className="mt-3 mb-1">
             <GPUStatusBar gpus={machine.gpus} />
           </div>
         </div>
