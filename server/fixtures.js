@@ -1,6 +1,9 @@
 import { Meteor } from 'meteor/meteor';
 import { MachineLogs } from '/imports/api/machines';
 
+
+const MINUTES = 60_000;
+
 Meteor.startup(async () => {
   // Only seed in dev mode
   console.log('Starting up and seeding the database if necessary...');
@@ -50,7 +53,7 @@ Meteor.startup(async () => {
       {
         machineId: 'machine-2',
         name: 'Machine 2',
-        timestamp: new Date(now - 30_000),
+        timestamp: new Date(now - 2*MINUTES),
         gpus: [
           {
             id: 0,
@@ -77,7 +80,7 @@ Meteor.startup(async () => {
       {
         machineId: 'machine-3',
         name: 'Machine 3',
-        timestamp: new Date(now - 60_000),
+        timestamp: new Date(now - 60*MINUTES),
         gpus: [],
         cpu: {
           nproc: 8,
@@ -94,7 +97,7 @@ Meteor.startup(async () => {
       {
         machineId: 'machine-4',
         name: 'Machine 4',
-        timestamp: new Date(now - 90_000),
+        timestamp: new Date(now - 300*MINUTES),
         gpus: [
           {
             id: 0,
