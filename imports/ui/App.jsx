@@ -111,8 +111,8 @@ export const App = () => {
   /* Render                                                         */
   /* -------------------------------------------------------------- */
   return (
-    <div className="p-4 bg-gray-900 text-white font-mono min-h-screen">
-      <h1 className="text-3xl font-bold mb-4">Still alive?</h1>
+    <div className="p-4 bg-zinc-900 text-zinc-100 font-mono min-h-screen">
+      <h1 className="text-3xl font-bold mb-4 text-zinc-300">Still alive?</h1>
 
       <DndContext
         sensors={sensors}
@@ -123,7 +123,7 @@ export const App = () => {
           items={machines.map((m) => m.machineId)}
           strategy={rectSortingStrategy}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
             {machines.map((machine) => (
               <SortableMachineCard key={machine.machineId} machine={machine} />
             ))}

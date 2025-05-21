@@ -1,8 +1,9 @@
-import React, { useMemo } from "react";
+import React, { useState, useEffect, useMemo, useReducer } from "react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
-import { getMachineSummary } from "/imports/utils/summary"; 
+import { getMachineSummary } from "/imports/utils/summary";
+import MachineCardDetails from "./MachineCardDetails";
 
 dayjs.extend(relativeTime);
 
@@ -13,23 +14,18 @@ const DEFAULT_WARNING_RANGES = {
   HDD: { min: 70, max: 90 },
 };
 
-/**
- * FancyBarGauge – vertical bar gauge for resource usage
- * --------------------------------------------------------------
- * name         Friendly resource label (e.g. "CPU")
- * currUsage    Current usage value (number)
- * maxUsage     Maximum possible usage (number)
- * unit         Units for tooltip (e.g. "%", "GB")
- * warningRange { min, max } ⇒ yellow zone when curr% ∈ [min, max]
- */
+
 export const FancyBarGauge = ({
   name,
   fillPct = 0,
   title = null,
   warningRange = { min: 60, max: 80 },
-  sections = 5,
+  sections = 10,
 }) => {
   const sectionHeight = 1.0 / sections;
+
+  // Round and clamp fillPct to [0, 100]
+  fillPct = Math.min(Math.max(Math.round(fillPct), 0), 100);
 
   // Decide bar colour based on thresholds
   let barColour = "bg-green-500";
@@ -38,14 +34,14 @@ export const FancyBarGauge = ({
 
   return (
     <div className="flex flex-col items-center rounded" title={title}>
-      <div className="relative h-12 w-6 overflow-hidden pointer-events-none">
+      <div className="relative flex-1 min-h-20 w-6 overflow-hidden pointer-events-none">
         <div className="flex flex-col-reverse gap-[1px] h-full">
           {[...Array(sections)]
               .map((_, i) => Math.min(Math.max((fillPct - 100*sectionHeight*i) / sectionHeight, 0), 100))
               .map((fillPct, i) => (
             <div
               key={i}
-              className={`w-full relative h-1 flex-grow bg-slate-700`}
+              className={`w-full relative h-1 flex-grow bg-zinc-700`}
             >
               <div
                 className={`absolute bottom-0 left-0 w-full border-t-white/10 ${barColour} ${fillPct > 0 ? ('border-b-[1px] border-b-black/5 ' + (fillPct >= 100 ? 'border-t-[2px]' : 'border-t-[1px]')) : ''}`}
@@ -58,24 +54,18 @@ export const FancyBarGauge = ({
               )}
             </div>
           ))}
-          {/* <div className="absolute inset-0 pointer-events-none bg-slate-900" /> */}
+          {/* <div className="absolute inset-0 pointer-events-none bg-zinc-900" /> */}
         </div>
       </div>
 
       {/* text labels */}
-      <span className="mt-1 text-white font-mono text-xs">{fillPct.toFixed(0)}%</span>
-      <span className="text-white font-mono text-[11px]">{name}</span>
+      <span className="mt-1 text-zinc-200 font-mono text-xs">{fillPct.toFixed(0)}%</span>
+      <span className="text-zinc-300/90 font-mono text-[11px]">{name}</span>
     </div>
   );
 };
 
-/**
- * StillAlive
- * --------------------------------------------------------------
- * Props:
- *  - lastUpdated: Date
- *  - warningRange: { min, max } ⇒ yellow zone when curr% ∈ [min, max]
- */
+
 const StillAlive = ({ lastUpdated, warningRange = { min: 10, max: 240 }}) => {
   // if the machine was last updated more than 240 minutes ago, it's dead
   const notAlive = dayjs().diff(dayjs(lastUpdated), "minute") > warningRange.max;
@@ -88,27 +78,56 @@ const StillAlive = ({ lastUpdated, warningRange = { min: 10, max: 240 }}) => {
   const display = maybeAlive ? "Maybe alive 🤞" : notAlive ? "Not alive 💀" : "Still alive ✨";
 
   return (
-    <div className={`text-xs rounded-lg px-2 py-0.5 inline-block mb-1 ${color}`}>
+    <div className={`text-xs rounded-lg px-2 py-0.5 inline-block my-0.5 ${color}`}>
       {display}
     </div>
   );
 };
 
-/**
- * MachineCard
- * --------------------------------------------------------------
- * Props:
- *  - machine: { id, name, timestamp: Date, cpu, gpu, ram, hdd }
- *  - units (optional): { CPU, GPU, RAM, HDD }
- *  - warningRanges (optional): { CPU, GPU, RAM, HDD }
- *  - maxUsage (optional): { CPU, GPU, RAM, HDD }
- */
+const GPUStatusBar = ({ gpus }) => {
+  return (
+    <div className="flex flex-row gap-1 flex-wrap">
+      {gpus.map((gpu, index) => {
+        return (
+          gpu.users.length === 0 ? (
+            <div
+              key={index}
+              className={`text-xs rounded-lg px-2 py-0.5 bg-radial-[at_75%_25%] from-green-400/80 to-green-600/50 inset-shadow-sm inset-shadow-green-200/60 shadow-xs shadow-green-500/10`}
+              title={`GPU ${index} is free`}
+            >
+              <span className="text-xs font-bold opacity-70 text-white">{index}</span>
+            </div>
+          ) : (gpu.utilization > 80) ? (
+            <div
+              key={index}
+              className={`opacity-90 text-xs rounded-lg px-2 py-0.5 relative overflow-hidden bg-radial-[at_50%_60%] from-orange-500/80 to-rose-500/80 inset-shadow-sm inset-shadow-orange-400/70 shadow-xs shadow-red-500/10`}
+              title={`GPU ${index} fully utilized`}
+            >
+              <div className="absolute inset-0 bg-gradient-to-t from-amber-300/70 to-rose-600/30 opacity-90 inset-shadow-xs inset-shadow-orange-400/90 animate-[pulse_4s_cubic-bezier(.5,0,.5,1)_infinite]" />
+              <span className="text-xs font-bold opacity-80 text-white">{index}</span>
+            </div>
+          ) : (
+            <div
+              key={index}
+              className={`text-xs rounded-lg px-2 py-0.5 bg-radial-[at_50%_60%] from-zinc-400/50 to-zinc-500/50 inset-shadow-[0_1px_2.5px_rgba(0,0,0,0.3)]`}
+              title={`GPU ${index} in use`}
+            >
+              <span className="text-xs font-bold opacity-70 text-zinc-300">{index}</span>
+            </div>
+          )
+        );
+      })}
+    </div>
+  );
+};
+
+
 const MachineCard = ({
   machine,
   warningRanges = DEFAULT_WARNING_RANGES,
 }) => {
   // Persist collapsed state in localStorage, keyed by machine._id
-  const [collapsed, setCollapsed] = React.useState(() => {
+  const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") return false; // SSR safeguard
     return localStorage.getItem(`machine-card-collapsed-${machine._id}`) === "true";
   });
@@ -117,13 +136,13 @@ const MachineCard = ({
     return getMachineSummary(machine);
   }, [machine]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     localStorage.setItem(`machine-card-collapsed-${machine._id}`, collapsed);
   }, [collapsed, machine._id]);
 
   // Tick every minute so the relative timestamp remains fresh
-  const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
-  React.useEffect(() => {
+  const [, forceUpdate] = useReducer((x) => x + 1, 0);
+  useEffect(() => {
     const id = setInterval(forceUpdate, 60_000);
     return () => clearInterval(id);
   }, []);
@@ -186,22 +205,30 @@ const MachineCard = ({
 
   return (
     <div
-      className="border-[2px] border-white/15 backdrop-blur-xl bg-linear-45 from-slate-900/30 to-slate-600/30 rounded-lg p-4 shadow-md cursor-pointer select-none transition-all duration-200"
+      className="border-[1px] border-white/15 backdrop-blur-xl bg-linear-45 from-zinc-900/30 to-zinc-600/20 rounded-lg p-3 shadow-md cursor-pointer select-none transition-all duration-200"
       onClick={toggle}
     >
-      <div className="flex flex-row justify-between items-start gap-4">
+      <div className="flex flex-row justify-between items-stretch gap-4">
         <div>
           <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1">
-            <h2 className="text-xl font-semibold flex items-center"><span className="text-base inline-block" title={machineState}>{icon}</span><span>&nbsp;{machine.name}</span></h2>
+            <h2 className="text-xl font-semibold flex items-center">
+              <span className="text-base inline-block" title={machineState}>{icon}</span>
+              <span>&nbsp;{machine.name}</span>
+            </h2>
             <StillAlive lastUpdated={machine.timestamp} />
           </div>
-          <p className="text-sm text-gray-500 mt-1" title={formattedTimestamp}>
+
+          <p className="text-xs text-zinc-400 mt-1" title={formattedTimestamp}>
             Last update: {relativeTimestamp}
           </p>
+
+          <div className="mt-3 mb-1">
+            <GPUStatusBar gpus={machine.gpus} />
+          </div>
         </div>
 
         <div className="flex flex-row">
-          <div className="flex flex-row gap-3 rounded">
+          <div className="flex flex-row gap-2.5 rounded">
             {resources.map((res) => (
               <FancyBarGauge key={res.name} {...res} />
             ))}
@@ -210,8 +237,8 @@ const MachineCard = ({
       </div>
 
       {!collapsed && (
-        <div className="mt-4">
-          <p>Detailed stats</p>
+        <div className="mt-4 mb-1">
+          <MachineCardDetails machine={machine} />
         </div>
       )}
     </div>
