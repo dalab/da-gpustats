@@ -6,19 +6,18 @@ FROM node:23.11-alpine AS builder
 # 1. Prepare work dir
 WORKDIR /app
 
-# 2. Copy ONLY the Meteor release file first (for better cache utilisation)
+# 2. Install prerequisites packages
+RUN apt-get update && apt-get install -y python3 make g++ curl bash
+
+# 3. Copy ONLY the Meteor release file first (for better cache utilisation)
 COPY .meteor/release .meteor/release
 
-# 3. Install the exact Meteor version required by the project
+# 4. Install the exact Meteor version required by the project
 #    .meteor/release looks like "METEOR@3.2.1"  → we extract "3.2.1"
 RUN set -e; \
     METEOR_VERSION=$(grep -o 'METEOR@[0-9.]*' .meteor/release | cut -d'@' -f2); \
     echo "Installing Meteor $METEOR_VERSION"; \
     curl --silent --show-error --fail https://install.meteor.com/?release=${METEOR_VERSION} | bash
-
-# 4. Build prerequisites for node-gyp packages
-RUN apt-get update && apt-get install -y python3 make g++ && \
-    rm -rf /var/lib/apt/lists/*
 
 # 5. Install server-side deps (works with or without lockfile)
 COPY package.json package-lock.json ./
