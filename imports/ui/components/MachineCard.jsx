@@ -100,11 +100,13 @@ const GPUStatusBar = ({ gpus }) => {
           ) : (gpu.utilization > 90) ? (
             <div
               key={index}
-              className={`opacity-90 text-xs rounded-lg px-2 py-0.5 relative overflow-hidden bg-radial-[at_50%_60%] from-orange-500/80 to-rose-500/80 inset-shadow-sm inset-shadow-orange-400/70 shadow-xs shadow-red-500/10`}
+              className={`opacity-90 text-xs rounded-lg px-2 py-0.5 relative overflow-hidden bg-radial-[at_50%_50%] from-orange-500  via-rose-500 to-fuchsia-500 inset-shadow-sm inset-shadow-fuchsia-400/70 shadow-xs shadow-red-500/10`}
               title={`GPU ${index} fully utilized`}
             >
-              <div className="absolute inset-0 bg-gradient-to-t from-amber-300/70 to-rose-600/30 opacity-90 inset-shadow-xs inset-shadow-orange-400/90 animate-[pulse_4s_cubic-bezier(.5,0,.5,1)_infinite]" />
-              <span className="text-xs font-bold opacity-80 text-white">{index}</span>
+              <div className="absolute z-1 -inset-1 bg-gradient-to-t from-rose-500/100 to-purple-500/100 opacity-50 animate-[spin_5s_linear_infinite]" />
+              <div className="absolute z-2 rounded-lg inset-0 inset-shadow-sm inset-shadow-orange-600/20" />
+              <div className="absolute z-2 rounded-lg inset-0 bg-gradient-to-t from-yellow-300/90 via-orange-400/20 to-rose-600/00 opacity-80 animate-[pulse_4s_cubic-bezier(.5,0,.5,1)_infinite] inset-shadow-xs inset-shadow-yellow-400/20" />
+              <span className="text-xs relative z-4 font-bold opacity-80 text-white">{index}</span>
             </div>
           ) : (
             <div
