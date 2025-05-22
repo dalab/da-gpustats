@@ -37,8 +37,8 @@ const MachineCardDetails = ({ machine }) => {
         </thead>
         <tbody>
           {machine.gpus.map((gpu, index) => (
-            <>
-              <tr key={index}>
+            <React.Fragment key={index}>
+              <tr>
                 <td className="pr-2 pl-1 pt-2 text-center font-bold">{index}</td>
                 <td className="px-2 pt-2 text-right">{gpu.utilization}%</td>
                 <td className="pr-2 pl-1 pt-2 text-center">
@@ -58,7 +58,7 @@ const MachineCardDetails = ({ machine }) => {
                   )}
                 </td>
               </tr>
-            </>
+            </React.Fragment>
           ))}
         </tbody>
       </table>
