@@ -33,9 +33,9 @@ export function getMachineSummary(machineLog) {
   const hddDisplay = `${formatBytes(machineLog.cpu.storage_used)} / ${formatBytes(machineLog.cpu.storage_total)}`;
 
   return {
-    cpu: { util: Math.min(100, cpuPct), display: cpuDisplay },
-    gpu: { util: Math.min(100, gpuPct), display: gpuDisplay },
-    ram: { util: Math.min(100, ramPct), display: ramDisplay },
-    hdd: { util: Math.min(100, hddPct), display: hddDisplay },
+    cpu: { util: Math.round(cpuPct), display: cpuDisplay },
+    gpu: { util: Math.round(gpuPct), display: gpuDisplay },
+    ram: { util: Math.round(ramPct), display: ramDisplay },
+    hdd: { util: Math.round(hddPct), display: hddDisplay },
   };
 }
