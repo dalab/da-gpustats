@@ -5,10 +5,11 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - ${PORT:-8080}:3000
+      - target: 3000
+        published: ${PORT:-8080}
     environment:
-      - MONGO_URL=${MONGO_URL:-mongodb://mongo:27017/stillalive}
-      - ROOT_URL=${ROOT_URL:-http://localhost}
+      MONGO_URL: "${MONGO_URL:-mongodb://mongo:27017/stillalive}"
+      ROOT_URL: "${ROOT_URL:-http://localhost}"
 networks:
   nginx:
     external: true
