@@ -7,7 +7,7 @@ FROM node:23.11-alpine AS builder
 WORKDIR /app
 
 # 2. Install prerequisites packages
-RUN apt-get update && apt-get install -y python3 make g++ curl bash
+RUN apt update && apt install -y python3 make g++ curl bash
 
 # 3. Copy ONLY the Meteor release file first (for better cache utilisation)
 COPY .meteor/release .meteor/release
