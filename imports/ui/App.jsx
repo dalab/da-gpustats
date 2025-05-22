@@ -129,7 +129,7 @@ export const App = () => {
           items={machines.map((m) => m.machineId)}
           strategy={rectSortingStrategy}
         >
-          <div className="grid grid-cols-1 xs:grid-cols-[repeat(auto-fit,minmax(20rem,1fr))] md:grid-cols-[repeat(auto-fit,minmax(24.5rem,1fr))] gap-4">
+          <div className="grid grid-cols-1 xs:grid-cols-[repeat(auto-fit,minmax(20rem,1fr))] md:grid-cols-[repeat(auto-fit,minmax(24rem,1fr))] gap-4">
             {machines.map((machine) => (
                 <SortableMachineCard key={machine.machineId} machine={machine} />
             ))}

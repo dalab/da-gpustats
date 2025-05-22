@@ -29,10 +29,10 @@ const MachineCardDetails = ({ machine }) => {
       <table className="w-full text-sm text-left text-zinc-300">
         <thead className="text-sm text-zinc-400/90 uppercase">
           <tr className="border-b border-zinc-700">
-            <th scope="col" className="pr-2 pl-1 pb-1 w-6 text-center align-top">GPU</th>
-            <th scope="col" className="px-2 pb-1 w-10 text-right align-top">Util<br/>PWR</th>
-            <th scope="col" className="px-2 pb-1 w-8 text-center align-top"></th>
-            <th scope="col" className="pl-2 pr-1 pb-1 text-right align-top">Memory<br/>User(s)</th>
+            <th scope="col" className="pr-2 pl-1 pb-1 w-6 text-center align-top text-sm/4">GPU</th>
+            <th scope="col" className="px-2 pb-1 w-10 text-right align-top text-sm/4">Util<br/><span className="text-xs">PWR</span></th>
+            <th scope="col" className="px-2 pb-1 w-8 text-center align-top text-sm/4"></th>
+            <th scope="col" className="pl-2 pr-1 pb-1 text-right align-top text-sm/4">Mem<br/><span className="text-xs">User(s)</span></th>
           </tr>
         </thead>
         <tbody>
@@ -65,7 +65,7 @@ const MachineCardDetails = ({ machine }) => {
         </tbody>
       </table>
 
-      <div className="flex flex-row flex-wrap gap-x-6 gap-y-1 mt-5 text-xs text-zinc-400 px-1">
+      <div className="flex flex-row flex-wrap gap-x-5 gap-y-1 mt-5 text-xs text-zinc-400 px-1">
         <p className="">CPU: {machine.cpu.load_avg} / {machine.cpu.nproc}</p>
         <p className="">RAM: {formatBytes(machine.cpu.memory_used)} / {formatBytes(machine.cpu.memory_total)}</p>
         <p className="">HDD: {formatBytes(machine.cpu.storage_used)} / {formatBytes(machine.cpu.storage_total)}</p>
