@@ -5,7 +5,7 @@ import { formatBytes } from "/imports/utils/summary";
 
 const GPUStatus = ({ gpu }) => {
   const isFree = gpu.users.length === 0;
-  const isBurning = gpu.utilization > 80;
+  const isBurning = gpu.utilization > 90;
   
   return (
     isFree ? (
