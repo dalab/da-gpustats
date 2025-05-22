@@ -75,7 +75,7 @@ const StillAlive = ({ lastUpdated, warningRange = { min: 10, max: 240 }}) => {
   const maybeAlive = !isAlive && !notAlive;
 
   const color = isAlive ? "bg-green-500/50" : notAlive ? "bg-red-500/50" : "bg-yellow-500/50";
-  const display = maybeAlive ? "Maybe alive 🤞" : notAlive ? "Not alive 💀" : "Still alive ✨";
+  const display = maybeAlive ? "maybe alive 🤞" : notAlive ? "not alive 💀" : "alive ✨";
 
   return (
     <div className={`text-xs rounded-lg px-2 py-0.5 inline-block my-0.5 ${color}`}>
@@ -210,10 +210,10 @@ const MachineCard = ({
     >
       <div className="flex flex-row justify-between items-stretch gap-4">
         <div>
-          <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1">
-            <h2 className="text-xl font-semibold flex items-center">
+          <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1 -mt-0.5">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
               <span className="text-base inline-block" title={machineState}>{icon}</span>
-              <span>&nbsp;{machine.name}</span>
+              <span>{machine.name}</span>
             </h2>
             <StillAlive lastUpdated={machine.timestamp} />
           </div>
