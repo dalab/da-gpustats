@@ -74,6 +74,8 @@ export const App = () => {
     if (!machineOrder) {
       // If we don't have an order, use the default order
       const defaultOrder = rawMachines.map((m) => m.machineId);
+      defaultOrder.sort();
+      // save the default order to localStorage
       setMachineOrder(defaultOrder);
       return rawMachines;
     }
@@ -84,6 +86,10 @@ export const App = () => {
 
     // Append any new machines we’ve never seen
     const leftovers = rawMachines.filter((m) => !machineOrder.includes(m.machineId));
+    if (leftovers.length) {
+      leftovers.sort((a, b) => a.machineId.localeCompare(b.machineId));
+      setMachineOrder((prev) => [...prev, ...leftovers.map((m) => m.machineId)]);
+    }
 
     return [...ordered, ...leftovers];
   }, [rawMachines, machineOrder]);
@@ -96,11 +102,11 @@ export const App = () => {
   );
 
   const handleDragEnd = ({ active, over }) => {
-    if (!over || active.machineId === over.machineId) return;
+    if (!over || active.id === over.id) return;
 
     setMachineOrder((prev) => {
-      const oldIndex = prev.indexOf(active.machineId);
-      const newIndex = prev.indexOf(over.machineId);
+      const oldIndex = prev.indexOf(active.id);
+      const newIndex = prev.indexOf(over.id);
       const next = arrayMove(prev, oldIndex, newIndex);
       // localStorage is written by the useEffect above
       return next;
