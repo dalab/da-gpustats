@@ -9,7 +9,7 @@ dayjs.extend(relativeTime);
 
 const DEFAULT_WARNING_RANGES = {
   CPU: { min: 80, max: 100 },
-  GPU: { min: 60, max: 80 },
+  GPU: { min: 80, max: 100 },
   RAM: { min: 70, max: 90 },
   HDD: { min: 80, max: 90 },
 };
@@ -74,11 +74,11 @@ const StillAlive = ({ lastUpdated, warningRange = { min: 10, max: 240 }}) => {
   // if it's neighter alive nor dead, it is maybe alive
   const maybeAlive = !isAlive && !notAlive;
 
-  const color = isAlive ? "bg-green-500/50" : notAlive ? "bg-red-500/50" : "bg-yellow-500/50";
+  const color = isAlive ? "bg-green-500/40" : notAlive ? "bg-red-500/40" : "bg-yellow-500/40";
   const display = maybeAlive ? "maybe alive 🤞" : notAlive ? "not alive 💀" : "alive ✨";
 
   return (
-    <div className={`text-xs rounded-lg px-2 py-0.5 inline-block my-0.5 ${color}`}>
+    <div className={`text-xs rounded-lg px-2 py-0.5 inline-block my-0.5 text-white/90 ${color}`}>
       {display}
     </div>
   );
@@ -151,7 +151,7 @@ const MachineCard = ({
     const numFreeGpus = machine.gpus.filter((gpu) => gpu.users.length === 0).length;
     const numGpus = machine.gpus.length;
     // burning if all GPUs are utilized >= 80%
-    const isBurning = numGpus > 0 && machine.gpus.every((gpu) => gpu.utilization >= warningRanges.GPU.max);
+    const isBurning = numGpus > 0 && machine.gpus.every((gpu) => gpu.utilization >= 90);
     const isFull = summary.hdd.util >= warningRanges.HDD.max || summary.ram.util >= warningRanges.RAM.max || summary.cpu.util >= warningRanges.CPU.max;
     const isFree = summary.cpu.util < warningRanges.CPU.min && numFreeGpus >= (numGpus / 4) && summary.ram.util < warningRanges.RAM.min && summary.hdd.util < warningRanges.HDD.min;
     let icon = "🟡";
@@ -220,7 +220,7 @@ const MachineCard = ({
 
   return (
     <div
-      className="border-[1px] border-white/15 backdrop-blur-xl bg-linear-45 from-zinc-900/30 to-zinc-600/20 rounded-lg p-3 shadow-md cursor-pointer select-none transition-all duration-200"
+      className="border-[1px] border-white/15 backdrop-blur-xl bg-linear-45 from-zinc-900/30 to-zinc-600/20 rounded-lg p-3 shadow-md select-none transition-all duration-200"
       onClick={toggle}
     >
       <div className="flex flex-row justify-between gap-4">

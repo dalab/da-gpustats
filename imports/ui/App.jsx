@@ -29,10 +29,10 @@ const SortableMachineCard = ({ machine }) => {
   return (
     <div
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
       {...attributes}
       {...listeners}
-      className="cursor-grab active:cursor-grabbing active:z-10"
+      className="cursor-grab active:cursor-grabbing active:z-10 self-start focus-visible:outline-3 outline-white/60 outline-offset-2 rounded-lg"
     >
       <MachineCard machine={machine} />
     </div>
@@ -131,7 +131,7 @@ export const App = () => {
         >
           <div className="grid grid-cols-1 xs:grid-cols-[repeat(auto-fit,minmax(20rem,1fr))] md:grid-cols-[repeat(auto-fit,minmax(24.5rem,1fr))] gap-4">
             {machines.map((machine) => (
-              <SortableMachineCard key={machine.machineId} machine={machine} />
+                <SortableMachineCard key={machine.machineId} machine={machine} />
             ))}
           </div>
         </SortableContext>
