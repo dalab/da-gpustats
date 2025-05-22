@@ -97,7 +97,7 @@ const GPUStatusBar = ({ gpus }) => {
             >
               <span className="text-xs font-bold opacity-70 text-white">{index}</span>
             </div>
-          ) : (gpu.utilization > 90) ? (
+          ) : (gpu.utilization >= 90) ? (
             <div
               key={index}
               className={`opacity-90 text-xs rounded-lg px-2 py-0.5 relative overflow-hidden bg-radial-[at_50%_50%] from-orange-500  via-rose-500 to-fuchsia-500 inset-shadow-sm inset-shadow-fuchsia-400/70 shadow-xs shadow-red-500/10`}
