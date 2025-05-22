@@ -1,6 +1,6 @@
-name: stillalive
 services:
-  app:
+  meteor:
+    container_name: stillalive
     build:
       context: .
       dockerfile: Dockerfile
