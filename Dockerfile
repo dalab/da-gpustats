@@ -1,13 +1,14 @@
 ###############################################################################
 # Stage 1 – BUILD the Meteor bundle
 ###############################################################################
-FROM node:23.11-alpine AS builder
+FROM node:24-bullseye AS builder
 
 # 1. Prepare work dir
 WORKDIR /app
 
-# 2. Install prerequisites packages
-RUN apt update && apt install -y python3 make g++ curl bash
+# 2. Build prerequisites for node-gyp packages
+RUN apt-get update && apt-get install -y python3 make g++ && \
+    rm -rf /var/lib/apt/lists/*
 
 # 3. Copy ONLY the Meteor release file first (for better cache utilisation)
 COPY .meteor/release .meteor/release
@@ -24,7 +25,7 @@ COPY package.json package-lock.json ./
 COPY .meteor .meteor
 RUN meteor npm install --no-audit --no-fund
 
-# 6. Copy the rest of the source *after* installing dependencies
+# 6. Copy the rest of the source *after* installing Meteor
 COPY . .
 
 # 7. Build a server-only bundle
@@ -34,7 +35,7 @@ RUN meteor build --directory /opt/build --server-only --allow-superuser
 ###############################################################################
 # Stage 2 – RUNTIME image
 ###############################################################################
-FROM node:23.11-slim
+FROM node:24-slim
 
 ENV NODE_ENV=production \
     PORT=3000
