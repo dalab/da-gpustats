@@ -12,7 +12,7 @@ COPY .meteor/release .meteor/release
 # 3. Install the exact Meteor version required by the project
 #    .meteor/release looks like "METEOR@3.2.1"  → we extract "3.2.1"
 RUN set -e; \
-    METEOR_VERSION=$(grep -oP 'METEOR@\K[0-9.]*' .meteor/release); \
+    METEOR_VERSION=$(grep -o 'METEOR@[0-9.]*' .meteor/release | cut -d'@' -f2); \
     echo "Installing Meteor $METEOR_VERSION"; \
     curl --silent --show-error --fail https://install.meteor.com/?release=${METEOR_VERSION} | bash
 
