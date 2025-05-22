@@ -10,6 +10,8 @@ services:
     environment:
       MONGO_URL: "${MONGO_URL:-mongodb://mongo:27017/stillalive}"
       ROOT_URL: "${ROOT_URL:-http://localhost}"
+    networks:
+      - nginx
 networks:
   nginx:
     external: true
