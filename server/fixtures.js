@@ -6,7 +6,7 @@ const MINUTES = 60_000;
 
 Meteor.startup(async () => {
   // Only seed in dev mode
-  console.log('Starting up and seeding the database if necessary...');
+  console.log('Starting up...');
   if (Meteor.isDevelopment && await MachineLogs.find().countAsync() === 0) {
     console.log('Seeding the database with initial data...');
 
