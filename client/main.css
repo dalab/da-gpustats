@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@theme {
+  --breakpoint-xs: 24rem;
+  --breakpoint-3xl: 120rem;
+}
+
 body {
   font-family: sans-serif;
   background-color: var(--color-zinc-900);

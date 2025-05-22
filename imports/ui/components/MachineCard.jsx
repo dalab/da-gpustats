@@ -8,16 +8,16 @@ import MachineCardDetails from "./MachineCardDetails";
 dayjs.extend(relativeTime);
 
 const DEFAULT_WARNING_RANGES = {
-  CPU: { min: 50, max: 80 },
-  GPU: { min: 50, max: 80 },
+  CPU: { min: 80, max: 100 },
+  GPU: { min: 60, max: 80 },
   RAM: { min: 70, max: 90 },
-  HDD: { min: 70, max: 90 },
+  HDD: { min: 80, max: 90 },
 };
 
 
 export const FancyBarGauge = ({
   name,
-  fillPct = 0,
+  percent = 0,
   title = null,
   warningRange = { min: 60, max: 80 },
   sections = 10,
@@ -25,7 +25,7 @@ export const FancyBarGauge = ({
   const sectionHeight = 1.0 / sections;
 
   // Round and clamp fillPct to [0, 100]
-  fillPct = Math.min(Math.max(Math.round(fillPct), 0), 100);
+  fillPct = Math.min(Math.max(Math.round(percent), 0), 100);
 
   // Decide bar colour based on thresholds
   let barColour = "bg-green-500";
@@ -59,7 +59,7 @@ export const FancyBarGauge = ({
       </div>
 
       {/* text labels */}
-      <span className="mt-1 text-zinc-200 font-mono text-xs">{fillPct.toFixed(0)}%</span>
+      <span className="mt-1 text-zinc-200 font-mono text-xs">{percent.toFixed(0)}%</span>
       <span className="text-zinc-300/90 font-mono text-[11px]">{name}</span>
     </div>
   );
@@ -148,9 +148,12 @@ const MachineCard = ({
   }, []);
 
   const { icon, machineState } = useMemo(() => {
-    const isBurning = summary.cpu.util >= warningRanges.CPU.max || summary.gpu.util >= warningRanges.GPU.max;
-    const isFull = summary.hdd.util >= warningRanges.HDD.max || summary.ram.util >= warningRanges.RAM.max;
-    const isFree = summary.cpu.util < warningRanges.CPU.min && summary.gpu.util < warningRanges.GPU.min && summary.ram.util < warningRanges.RAM.min && summary.hdd.util < warningRanges.HDD.min;
+    const numFreeGpus = machine.gpus.filter((gpu) => gpu.users.length === 0).length;
+    const numGpus = machine.gpus.length;
+    // burning if all GPUs are utilized >= 80%
+    const isBurning = numGpus > 0 && machine.gpus.every((gpu) => gpu.utilization >= warningRanges.GPU.max);
+    const isFull = summary.hdd.util >= warningRanges.HDD.max || summary.ram.util >= warningRanges.RAM.max || summary.cpu.util >= warningRanges.CPU.max;
+    const isFree = summary.cpu.util < warningRanges.CPU.min && numFreeGpus >= (numGpus / 4) && summary.ram.util < warningRanges.RAM.min && summary.hdd.util < warningRanges.HDD.min;
     let icon = "🟡";
     let machineState = "Moderately used";
     if (isBurning) {
@@ -177,42 +180,54 @@ const MachineCard = ({
       key: "cpu",
       name: "CPU",
       title: summary.cpu.display,
-      fillPct: summary.cpu.util,
+      percent: summary.cpu.util,
       warningRange: warningRanges.CPU,
     },
     {
       key: "gpu",
       name: "GPU",
       title: summary.gpu.display,
-      fillPct: summary.gpu.util,
+      percent: summary.gpu.util,
       warningRange: warningRanges.GPU,
     },
     {
       key: "ram",
       name: "RAM",
       title: summary.ram.display,
-      fillPct: summary.ram.util,
+      percent: summary.ram.util,
       warningRange: warningRanges.RAM,
     },
     {
       key: "hdd",
       name: "HDD",
       title: summary.hdd.display,
-      fillPct: summary.hdd.util,
+      percent: summary.hdd.util,
       warningRange: warningRanges.HDD,
     },
   ];
+
+  // Get all GPU users
+  const allGpuUsers = useMemo(() => {
+    const users = {};
+    machine.gpus.forEach((gpu) => {
+      gpu.users.forEach((user) => users[user] = users[user] === undefined ? 1 : users[user] + 1);
+    });
+    // return array of objects with user and count
+    return Object.entries(users)
+      .map(([user, count]) => ({ user, count }))
+      .sort((a, b) => b.count - a.count)
+  }, [machine.gpus]);
 
   return (
     <div
       className="border-[1px] border-white/15 backdrop-blur-xl bg-linear-45 from-zinc-900/30 to-zinc-600/20 rounded-lg p-3 shadow-md cursor-pointer select-none transition-all duration-200"
       onClick={toggle}
     >
-      <div className="flex flex-row justify-between items-stretch gap-4">
+      <div className="flex flex-row justify-between gap-4">
         <div>
           <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1 -mt-0.5">
             <h2 className="text-lg font-semibold flex items-center gap-2">
-              <span className="text-base inline-block" title={machineState}>{icon}</span>
+              <span className="text-sm inline-block" title={machineState}>{icon}</span>
               <span>{machine.name}</span>
             </h2>
             <StillAlive lastUpdated={machine.timestamp} />
@@ -225,6 +240,17 @@ const MachineCard = ({
           <div className="mt-3 mb-1">
             <GPUStatusBar gpus={machine.gpus} />
           </div>
+
+          {allGpuUsers.length > 0 && (
+            <p className="text-xs text-zinc-400 mt-4">
+              Used by {allGpuUsers.map((u, i) => (
+                <>
+                  <span className="text-zinc-300">{u.user}</span>({u.count})
+                  {i < allGpuUsers.length - 1 ? ", " : ""}
+                </>
+              ))}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-row">

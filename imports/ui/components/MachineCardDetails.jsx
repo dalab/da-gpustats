@@ -9,11 +9,11 @@ const GPUStatus = ({ gpu }) => {
   
   return (
     isFree ? (
-      <span className="inline-block text-[11px] text-white/90 bg-green-500/40 rounded-lg px-2 mx-1 py-0.5 uppercase">
+      <span className="inline-block text-[10px] text-white/80 bg-green-500/30 rounded-md px-1.5 mx-1 pt-[2px] pb-[1px] uppercase">
         Free
       </span>
     ) : (
-      <span className="text-base/4 mx-1">{isBurning ? "🔥" : ""}</span>
+      <span className="text-sm/4 mx-1">{isBurning ? "🔥" : ""}</span>
     )
   )
 };
@@ -27,34 +27,36 @@ const MachineCardDetails = ({ machine }) => {
   return (
     <div>
       <table className="w-full text-sm text-left text-zinc-300">
-        <thead className="text-sm text-zinc-400 uppercase">
+        <thead className="text-sm text-zinc-400/90 uppercase">
           <tr className="border-b border-zinc-700">
-            <th scope="col" className="pr-2 pl-1 pb-2 w-6 text-center align-top">GPU</th>
-            <th scope="col" className="px-2 pb-2 w-8 text-right align-top">Util</th>
-            <th scope="col" className="px-2 pb-2 w-8 text-center align-top"></th>
-            <th scope="col" className="pl-2 pr-1 pb-2 text-right align-top">Memory<br/>User(s)</th>
+            <th scope="col" className="pr-2 pl-1 pb-1 w-6 text-center align-top">GPU</th>
+            <th scope="col" className="px-2 pb-1 w-10 text-right align-top">Util<br/>PWR</th>
+            <th scope="col" className="px-2 pb-1 w-8 text-center align-top"></th>
+            <th scope="col" className="pl-2 pr-1 pb-1 text-right align-top">Memory<br/>User(s)</th>
           </tr>
         </thead>
         <tbody>
           {machine.gpus.map((gpu, index) => (
             <React.Fragment key={index}>
               <tr>
-                <td className="pr-2 pl-1 pt-2 text-center font-bold">{index}</td>
-                <td className="px-2 pt-2 text-right">{gpu.utilization}%</td>
-                <td className="pr-2 pl-1 pt-2 text-center">
+                <td className="pr-2 pl-1 pt-1 text-center font-bold text-zinc-200">{index}</td>
+                <td className="px-2 pt-1 text-right">{gpu.utilization}%</td>
+                <td className="pr-2 pl-1 pt-1 text-center">
                   <GPUStatus gpu={gpu} />
                 </td>
-                <td className="pl-2 pr-1 pt-2 text-right">
+                <td className="pl-2 pr-1 pt-1 text-right text-zinc-400">
                   <p>{formatBytes(gpu.memory_used)} / {formatBytes(gpu.memory_total)}</p>
                 </td>
               </tr>
               <tr className="border-b border-zinc-700">
-                <td className="pr-2 pl-1 pb-1"></td>
-                <td className="px-2 pb-1"></td>
-                <td className="pr-2 pl-1 pb-1"></td>
-                <td className="text-zinc-300/90 text-xs text-right pb-1 pl-2 pr-1">
+                <td className="pr-2 pl-1 pb-0.5"></td>
+                <td className="px-2 pb-0.5">
+                  <p className="text-xs text-right text-zinc-400 mb-0.5 whitespace-nowrap">{gpu.power.toFixed(0)} W</p>
+                </td>
+                <td className="pr-2 pl-1 pb-0.5"></td>
+                <td className="text-zinc-200 text-xs text-right pb-0.5 pl-2 pr-1">
                   {(gpu.users.length >= 0) && (
-                    <p className="mt-1 mb-1">{gpu.users.join(", ")}</p>
+                    <p className="mb-0.5">{gpu.users.join(", ")}</p>
                   )}
                 </td>
               </tr>
