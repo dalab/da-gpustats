@@ -1,9 +1,6 @@
 import { Mongo } from 'meteor/mongo';
 import { Meteor } from 'meteor/meteor';
 
-/* ------------------------------------------------------------------ */
-/*  1. Collections                                                    */
-/* ------------------------------------------------------------------ */
 
 /** Per-machine **time-series** documents (persisted in MongoDB). */
 export const MachineLogs = new Mongo.Collection('machine_logs');
@@ -25,9 +22,6 @@ Machines.allow({
 });
 
 
-/* ------------------------------------------------------------------ */
-/*  3. Publication — send ONLY the latest log per machine             */
-/* ------------------------------------------------------------------ */
 if (Meteor.isServer) {
   Meteor.publish('machines', async function () {
     const self = this;
@@ -58,23 +52,21 @@ if (Meteor.isServer) {
     };
 
     /* -------------------------------------------------------------- */
-    /* Initial load (await!)                                          */
+    /* Initial load                                                   */
     /* -------------------------------------------------------------- */
     (async () => {
-      const all = await MachineLogs.find(
-        {},                                   // every log
-        { sort: { machineId: 1, timestamp: -1 } }
-      ).fetchAsync();                         // ← async!
-
-      const firstOfEach = new Map();          // machineId → doc
-      for (const doc of all) {
-        if (!firstOfEach.has(doc.machineId)) firstOfEach.set(doc.machineId, doc);
+      const machineIds = await MachineLogs.rawCollection().distinct('machineId');
+      if (machineIds.length === 0) {
+        self.ready();
+        return;
       }
 
-      for (const doc of firstOfEach.values()) {
-        self.added('machines', doc.machineId, doc);
-        latestSent.set(doc.machineId, doc.timestamp);
+      // Instead of fetching all logs, we can just get the latest for each machine
+      const proms = [];
+      for (const machineId of machineIds) {
+        proms.push(sendLatestSnapshot(machineId));
       }
+      await Promise.all(proms);
       self.ready();
     })().catch((err) => {
       console.error('machines publication startup error:', err);
@@ -82,7 +74,7 @@ if (Meteor.isServer) {
     });
 
     /* -------------------------------------------------------------- */
-    /* Live updates (observeChanges is sync but we call async helpers)*/
+    /* Live updates                                                   */
     /* -------------------------------------------------------------- */
     const cursor = MachineLogs.find({});
     const handle = await cursor.observeChangesAsync({
