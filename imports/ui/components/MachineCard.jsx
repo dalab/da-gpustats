@@ -246,10 +246,10 @@ const MachineCard = ({
           {allGpuUsers.length > 0 && (
             <p className="text-xs text-zinc-400 mt-4">
               Used by {allGpuUsers.map((u, i) => (
-                <>
+                <React.Fragment key={u.user}>
                   <span className="text-zinc-300">{u.user}</span>({u.count})
                   {i < allGpuUsers.length - 1 ? ", " : ""}
-                </>
+                </React.Fragment>
               ))}
             </p>
           )}
