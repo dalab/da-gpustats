@@ -7,7 +7,7 @@ export const MachineLogs = new Mongo.Collection('machine_logs');
 
 /** Per-machine **snapshot** that the client subscribes to.  
  *  Lives only in Minimongo for each connected client.               */
-export const Machines = new Mongo.Collection('machines');
+export const MachineSnapshots = new Mongo.Collection('machine_snapshots');
 
 MachineLogs.allow({
   insert: () => false,
@@ -15,7 +15,7 @@ MachineLogs.allow({
   remove: () => false,
 });
 
-Machines.allow({
+MachineSnapshots.allow({
   insert: () => false,
   update: () => false,
   remove: () => false,
@@ -23,7 +23,7 @@ Machines.allow({
 
 
 if (Meteor.isServer) {
-  Meteor.publish('machines', async function () {
+  Meteor.publish('machine_snapshots', async function () {
     const self = this;
     const latestSent = new Map();            // machineId → timestamp
 
@@ -37,16 +37,16 @@ if (Meteor.isServer) {
       if (!newest) {
         // No log left → remove the snapshot completely
         if (latestSent.has(machineId)) {
-          self.removed('machines', machineId);
+          self.removed('machine_snapshots', machineId);
           latestSent.delete(machineId);
         }
         return;
       }
 
       if (latestSent.has(machineId)) {
-        self.changed('machines', machineId, newest);
+        self.changed('machine_snapshots', machineId, newest);
       } else {
-        self.added('machines', machineId, newest);
+        self.added('machine_snapshots', machineId, newest);
       }
       latestSent.set(machineId, newest.timestamp);
     };
@@ -76,8 +76,9 @@ if (Meteor.isServer) {
     /* -------------------------------------------------------------- */
     /* Live updates                                                   */
     /* -------------------------------------------------------------- */
-    const cursor = MachineLogs.find({});
-    const handle = await cursor.observeChangesAsync({
+    const handle = await MachineLogs
+    .find({}, { fields: { machineId: 1, timestamp: 1 }, sort: { timestamp: -1 }, limit: 1 })
+    .observeChangesAsync({
       added(_id, fields) {
         // fields contains machineId already
         sendLatestSnapshot(fields.machineId).catch(console.error);

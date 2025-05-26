@@ -16,7 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-import { Machines } from '/imports/api/machines';
+import { MachineSnapshots } from '/imports/api/machines';
 import MachineCard from './components/MachineCard';
 
 /* ------------------------------------------------------------------ */
@@ -45,10 +45,10 @@ export const App = () => {
   /* Machine logs                                                   */
   /* -------------------------------------------------------------- */
   const rawMachines = useTracker(() => {
-    const sub = Meteor.subscribe('machines');
+    const sub = Meteor.subscribe('machine_snapshots');
     if (!sub.ready()) return [];
     // sorted deterministically (by machineId) so order is stable for new installs
-    return Machines.find({}, { sort: { machineId: 1 } }).fetch();
+    return MachineSnapshots.find({}, { sort: { machineId: 1 } }).fetch();
   });
 
   const [machineOrder, setMachineOrder] = useState(() => {

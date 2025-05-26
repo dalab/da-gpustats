@@ -13,6 +13,8 @@ Meteor.startup(async () => {
     { expireAfterSeconds }
   );
 
+  await MachineLogs.rawCollection().createIndex({ machineId: 1 });
+
   await MachineLogs.rawCollection().createIndex(
     { machineId: 1, timestamp: -1 },
   );
