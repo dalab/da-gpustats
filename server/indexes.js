@@ -1,21 +1,24 @@
 import { Meteor } from 'meteor/meteor';
-import { MachineLogs } from '/imports/api/machines';
+
+
+const LOG_RETENTION_DAYS = 30;
 
 Meteor.startup(async () => {
-  if (process.env.LOG_RETENTION_DAYS === undefined) {
-    console.warn('LOG_RETENTION_DAYS not set, using default of 30 days');
+  
+  const db  = MongoInternals.defaultRemoteCollectionDriver().mongo.db;
+  const name = 'machine_logs';
+  
+  const info = await db.listCollections({ name }).next();
+  if (!info) {
+    const expireAfterSeconds = LOG_RETENTION_DAYS * 24 * 60 * 60;
+    console.log(`Creating time-series collection "${name}" with retention of ${LOG_RETENTION_DAYS} days.`);
+    await db.createCollection(name, {
+      timeseries: {
+        timeField   : 'timestamp',          // existing field
+        metaField   : 'machineId',          // existing field
+        granularity : 'seconds'
+      },
+      expireAfterSeconds: expireAfterSeconds   // TTL built-in
+    });
   }
-  const daysToKeep = parseInt(process.env.LOG_RETENTION_DAYS || '30', 10);
-  const expireAfterSeconds = daysToKeep * 24 * 60 * 60;
-
-  await MachineLogs.rawCollection().createIndex(
-    { timestamp: 1 },
-    { expireAfterSeconds }
-  );
-
-  await MachineLogs.rawCollection().createIndex({ machineId: 1 });
-
-  await MachineLogs.rawCollection().createIndex(
-    { machineId: 1, timestamp: -1 },
-  );
 });
