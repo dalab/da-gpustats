@@ -108,6 +108,9 @@ export default User = () => {
       });
     },
     enabled: !!params.userId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
 
@@ -135,6 +138,9 @@ export default User = () => {
       });
     },
     enabled: !!params.userId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   return (

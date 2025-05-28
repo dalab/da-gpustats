@@ -1,84 +1,8 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import * as Plot from "@observablehq/plot";
-import * as d3 from 'd3';
+import React, { useState, useEffect, useLayoutEffect, useMemo } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Meteor } from 'meteor/meteor';
 
-
-function useWidth(ref) {
-  const [width, setWidth] = useState(false);
-  if (typeof window != 'undefined') { // Client only.
-    useEffect(() => {
-      let recalcWidth = () => {
-        let w = ref?.current?.offsetWidth || 0;
-        setWidth(w);
-      };
-      // Recalculate on window resize.
-      window.addEventListener('resize', recalcWidth);
-    }, [ref]);
-
-    useLayoutEffect(() => {
-      let w = ref?.current?.offsetWidth || 0;
-      setWidth(w);
-    }, [ref]);
-  }
-  return width ? width : 0;
-}
-
-export const UsagePlot = ({ data, from, to, timeFormat = null, interval = d3.utcHour }) => {
-  const containerRef = React.useRef(null);
-  const plotWidth = useWidth(containerRef);
-
-  console.log(Plot.utcInterval("day"))
-
-  const formatter = (d) => {
-    return timeFormat ? d3.timeFormat(timeFormat)(d) : d.toISOString();
-  }
-
-  useEffect(() => {
-    if (!data) {
-      containerRef.current.innerHTML = ''; // Clear previous plot
-      return;
-    }
-    const plot = Plot.plot({
-      y: {grid: true, label: "GPUh"},
-      // x: {label: "Time", interval: 3600000, type: "utc"},
-      x: {grid: false, label: "Time", tickFormat: formatter, domain: [from, to], type: "utc"},
-      width: plotWidth,
-      marks: [
-        Plot.ruleY([0]),
-        Plot.line(data, {
-          x: {value: "bucket", type: "utc", interval: interval},
-          y: "gpuHours",
-          // interval: interval,
-          tip: {
-            fill: "var(--color-zinc-800)",
-            fillOpacity: 0.8,
-            stroke: "var(--color-zinc-700)",
-            strokeOpacity: 0.8,
-            format: {
-              x: d => formatter(d),
-              y: d => `${d.toFixed(2)}h`,
-            }
-          },
-          ry2: 4,
-          ry1: -4,
-          // clip: "frame",
-          fill: "var(--color-blue-400)",
-          fillOpacity: 0.5,
-          insetLeft: 4,
-          insetRight: 4,
-        }),
-      ]
-    });
-    containerRef.current.innerHTML = ''; // Clear previous plot
-    containerRef.current.append(plot);
-  }, [data, plotWidth]);
-
-
-  return (
-    <div className="w-full" ref={containerRef} />
-  );
-};
 
 export default Stats = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -94,13 +18,90 @@ export default Stats = () => {
     navigate(`/stats/${userId}`);
   }
 
+  const to  = new Date();
+  const from = new Date(to.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const { data: userData, error: userError, loading: userLoading } = useQuery({
+    queryKey: ['allUserStatsSummary'],
+    queryFn: () => {
+      return new Promise((resolve, reject) => {
+        Meteor.call('usage/all_users', from.toISOString(), to.toISOString(), (err, res) => {
+          if (err) {
+            console.error('Error fetching user stats:', err);
+            reject(err);
+          } else {
+            console.log('User stats fetched:', res);
+            resolve(res);
+          }
+        });
+      });
+    },
+    enabled: true,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
+
+  const { data: machineData, error: machineError, loading: machineLoading } = useQuery({
+    queryKey: ['allMachineStatsSummary'],
+    queryFn: () => {
+      return new Promise((resolve, reject) => {
+        Meteor.call('usage/all_machines', from.toISOString(), to.toISOString(), (err, res) => {
+          console.log('Usage stats response:', res);
+          if (err) {
+            console.error('Error fetching user stats:', err);
+            reject(err);
+          } else {
+            console.log('User stats fetched:', res);
+            resolve(res);
+          }
+        });
+      });
+    },
+    enabled: true,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
+
+  const filteredUserData = useMemo(() => {
+    if (!userData || !userId) return userData;
+    return userData.filter(user => user.id.toLowerCase().includes(userId.toLowerCase()));
+  }, [userData, userId]);
+
+
   return (
     <div>
       <h1 className="text-3xl font-bold mb-4 text-zinc-300">Usage stats</h1>
 
+      <h2 className="text-xl font-semibold mb-4 text-zinc-200">Machines</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        { machineData && machineData.length > 0 ? (
+          machineData.map((machine) => (
+            <Link to={`/stats/${machine.id}`} className="p-3 bg-zinc-800 rounded hover:bg-zinc-700 transition-colors" key={machine.id}>
+              <h2 className="font-semibold mb-1 text-zinc-200">
+                {machine.id}
+              </h2>
+              <p className="text-zinc-400 text-sm">Last 7d: {machine.gpuHours.toFixed(2)} GPUh</p>
+            </Link>
+          ))
+        ) : (
+          <p className="text-zinc-400">No usage data available.</p>
+        )}
+        { userError && (
+          <p className="text-red-500">Error fetching usage data: {userError.message}</p>
+        )}
+        { userLoading && (
+          <p className="text-zinc-400">Loading...</p>
+        )}
+      </div>
+
+      <h2 className="text-xl font-semibold mt-8 mb-4 text-zinc-200">Users</h2>
+
       <form className="mb-4" onSubmit={handleSubmit}>
         <input
-          placeholder="Search by user"
+          placeholder="Search users"
           className="mb-4 p-2 bg-zinc-800 text-zinc-100 rounded"
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
@@ -108,6 +109,27 @@ export default Stats = () => {
         />
         <button type="submit" className="ml-2 p-2 bg-blue-600 text-white rounded">Search</button>
       </form>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        { filteredUserData && filteredUserData.length > 0 ? (
+          filteredUserData.map((user) => (
+            <Link to={`/stats/${user.id}`} className="p-3 bg-zinc-800 rounded hover:bg-zinc-700 transition-colors" key={user.id}>
+              <h2 className="font-semibold mb-1 text-zinc-200">
+                {user.id}
+              </h2>
+              <p className="text-zinc-400 text-sm">Last 7d: {user.gpuHours.toFixed(2)} GPUh</p>
+            </Link>
+          ))
+        ) : (
+          <p className="text-zinc-400">No usage data available.</p>
+        )}
+        { userError && (
+          <p className="text-red-500">Error fetching usage data: {userError.message}</p>
+        )}
+        { userLoading && (
+          <p className="text-zinc-400">Loading...</p>
+        )}
+      </div>
     </div>
   );
 };
