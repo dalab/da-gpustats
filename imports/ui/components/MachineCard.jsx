@@ -171,12 +171,17 @@ const MachineCard = ({
     if (summary.hdd.util >= warningRanges.HDD.max) {
       machineErrors.push("Disk is full, please clean up!");
     } else if (summary.hdd.util >= warningRanges.HDD.min) {
-      machineWarnings.push("Disk is almost full, please be considerate in your usage.");
+      machineWarnings.push("Disk is almost full, please delete some stuff if you can.");
+    }
+    if (summary.ram.util >= warningRanges.RAM.max) {
+      machineErrors.push("Out of memory, immediately kill your jobs!");
+    } else if (summary.ram.util >= warningRanges.RAM.min) {
+      machineWarnings.push("Memory is filling up, please reduce your RAM usage.");
     }
     if (summary.cpu.util >= warningRanges.CPU.max) {
       machineErrors.push("CPU is overloaded, please reduce your number of workers!");
     } else if (summary.cpu.util >= warningRanges.CPU.min) {
-      machineWarnings.push("CPU usage getting high, please be considerate in your usage.");
+      machineWarnings.push("CPU usage getting high, please be considerate of your usage.");
     }
     if (numGpus > 1 && numFreeGpus <= 1) {
       machineWarnings.push("Many GPUs are in use right now, please consider freeing some up.");
