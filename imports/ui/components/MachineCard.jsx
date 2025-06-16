@@ -164,9 +164,10 @@ const MachineCard = ({
     const machineWarnings = [];
     const machineErrors = [];
     const numFreeGpus = machine.gpus.filter((gpu) => gpu.users.length === 0).length;
+    const numBurningGpus = machine.gpus.filter((gpu) => gpu.utilization >= 90).length;
     const numGpus = machine.gpus.length;
-    // burning if all GPUs are utilized >= 80%
-    const isBurning = numGpus > 0 && machine.gpus.every((gpu) => gpu.utilization >= 90);
+    // burning if all GPUs are utilized >= 90%
+    const isBurning = numGpus > 0 && numBurningGpus === numGpus;
 
     if (summary.hdd.util >= warningRanges.HDD.max) {
       machineErrors.push("Disk is full, please clean up!");
@@ -183,7 +184,7 @@ const MachineCard = ({
     } else if (summary.cpu.util >= warningRanges.CPU.min) {
       machineWarnings.push("CPU usage getting high, please be considerate of your usage.");
     }
-    if (numGpus > 1 && numFreeGpus <= 1 && !isBurning) {
+    if ((numGpus - numBurningGpus) > 1 && numFreeGpus <= 1 && !isBurning) {
       machineWarnings.push("Many GPUs are in use right now, please consider freeing some up.");
     }
     if (getNotAlive(machine.timestamp, ALIVE_WARNING_RANGE)) {
