@@ -14,6 +14,17 @@ const DEFAULT_WARNING_RANGES = {
   HDD: { min: 80, max: 90 },
 };
 
+const ALIVE_WARNING_RANGE = { min: 10, max: 240 }; // in minutes
+
+
+function getIsAlive(lastUpdated, warningRange = ALIVE_WARNING_RANGE) {
+  return dayjs().diff(dayjs(lastUpdated), "minute") < warningRange.min;
+}
+
+function getNotAlive(lastUpdated, warningRange = ALIVE_WARNING_RANGE) {
+  return dayjs().diff(dayjs(lastUpdated), "minute") >= warningRange.max;
+}
+
 
 export const FancyBarGauge = ({
   name,
@@ -66,11 +77,11 @@ export const FancyBarGauge = ({
 };
 
 
-const StillAlive = ({ lastUpdated, warningRange = { min: 10, max: 240 }}) => {
+const StillAlive = ({ lastUpdated, warningRange = ALIVE_WARNING_RANGE}) => {
   // if the machine was last updated more than 240 minutes ago, it's dead
-  const notAlive = dayjs().diff(dayjs(lastUpdated), "minute") > warningRange.max;
+  const notAlive = getNotAlive(lastUpdated, warningRange);
   // if it was last updated less than 10 minutes ago, it's still alive
-  const isAlive = dayjs().diff(dayjs(lastUpdated), "minute") < warningRange.min;
+  const isAlive = getIsAlive(lastUpdated, warningRange);
   // if it's neighter alive nor dead, it is maybe alive
   const maybeAlive = !isAlive && !notAlive;
 
@@ -149,26 +160,42 @@ const MachineCard = ({
     return () => clearInterval(id);
   }, []);
 
-  const { icon, machineState } = useMemo(() => {
+  const { machineIcon, machineWarnings, machineErrors } = useMemo(() => {
+    const machineWarnings = [];
+    const machineErrors = [];
     const numFreeGpus = machine.gpus.filter((gpu) => gpu.users.length === 0).length;
     const numGpus = machine.gpus.length;
     // burning if all GPUs are utilized >= 80%
     const isBurning = numGpus > 0 && machine.gpus.every((gpu) => gpu.utilization >= 90);
-    const isFull = summary.hdd.util >= warningRanges.HDD.max || summary.ram.util >= warningRanges.RAM.max || summary.cpu.util >= warningRanges.CPU.max;
-    const isFree = summary.cpu.util < warningRanges.CPU.min && numFreeGpus >= (numGpus / 4) && summary.ram.util < warningRanges.RAM.min && summary.hdd.util < warningRanges.HDD.min;
-    let icon = "🟡";
-    let machineState = "Moderately used";
-    if (isBurning) {
-      icon = "🔥"
-      machineState = "Fully utilized";
-    } else if (isFull) {
-      icon = "🔴";
-      machineState = "Storage full, please clean up!";
-    } else if (isFree) {
-      icon = "🟢";
-      machineState = "Free to use";
+
+    if (summary.hdd.util >= warningRanges.HDD.max) {
+      machineErrors.push("Disk storage is full, please clean up!");
+    } else if (summary.hdd.util >= warningRanges.HDD.min) {
+      machineWarnings.push("Disk storage is getting full, please clean up!");
     }
-    return { icon, machineState };
+    if (summary.cpu.util >= warningRanges.CPU.max) {
+      machineErrors.push("CPU is overloaded, please reduce your number of workers!");
+    } else if (summary.cpu.util >= warningRanges.CPU.min) {
+      machineWarnings.push("CPU usage getting high, please be considerate in your usage.");
+    }
+    if (numGpus > 1 && numFreeGpus <= 1) {
+      machineWarnings.push("Many GPUs are in use right now. Please be considerate and kill some jobs if you can.");
+    }
+    if (getNotAlive(machine.timestamp, ALIVE_WARNING_RANGE)) {
+      machineErrors.push("Machine is not responding, it may be unavailable.");
+    }
+
+    let machineIcon = "🟡";
+    if (machineErrors.length > 0) {
+      machineIcon = "🔴";
+    } else if (isBurning) {
+      machineIcon = "🔥"
+    } else if (machineWarnings.length > 0) {
+      machineIcon = "🟡";
+    } else {
+      machineIcon = "🟢";
+    }
+    return { machineIcon, machineWarnings, machineErrors };
   }, [summary, warningRanges, machine.hdd]);
 
   const toggle = () => setCollapsed((prev) => !prev);
@@ -222,14 +249,14 @@ const MachineCard = ({
 
   return (
     <div
-      className="border-[1px] border-white/15 backdrop-blur-xl bg-linear-45 from-zinc-900/30 to-zinc-600/20 rounded-lg p-3 shadow-md select-none transition-all duration-200"
+      className="border-[1px] border-zinc-700 backdrop-blur-xl bg-linear-45 from-zinc-900/30 to-zinc-600/20 rounded-lg p-3 shadow-md select-none transition-all duration-200 overflow-hidden"
       onClick={toggle}
     >
       <div className="flex flex-row justify-between gap-4">
         <div>
           <div className="flex flex-row flex-wrap items-center gap-x-3 gap-y-1 -mt-0.5">
             <h2 className="text-lg font-semibold flex items-center gap-2">
-              <span className="text-sm inline-block" title={machineState}>{icon}</span>
+              <span className="text-sm inline-block">{machineIcon}</span>
               <span>{machine.name}</span>
             </h2>
             <StillAlive lastUpdated={machine.timestamp} />
@@ -265,9 +292,35 @@ const MachineCard = ({
       </div>
 
       {!collapsed && (
-        <div className="mt-4 mb-1">
-          <MachineCardDetails machine={machine} />
-        </div>
+        <React.Fragment>
+          { (machineWarnings.length > 0 || machineErrors.length > 0) && (
+            <div className="flex flex-col gap-2 mt-2">
+              { machineWarnings.length > 0 && (
+                <ul className={`-m-1 p-1 rounded bg-yellow-400/30 border border-yellow-500/50 mt-0 mb-0 flex flex-col gap-2`}>
+                  {machineWarnings.map((warning, index) => (
+                    <li key={index} className="text-xs relative before:content-['⚠️'] before:left-0.5 before:absolute  text-zinc-100 pl-6.5">
+                      {warning}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              { machineErrors.length > 0 && (
+                <ul className={`-m-1 p-1 rounded bg-red-400/30 border border-red-400/40 flex flex-col mt-0 mb-0 gap-2`}>
+                  {machineErrors.map((warning, index) => (
+                    <li key={index} className="text-xs relative before:content-['❗️'] before:left-0.5 before:absolute  text-zinc-100 pl-6.5">
+                      {warning}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          <div className="mt-4 mb-1">
+            <MachineCardDetails machine={machine} />
+          </div>
+        </React.Fragment>
       )}
     </div>
   );
