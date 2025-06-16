@@ -31,6 +31,7 @@ export const FancyBarGauge = ({
   percent = 0,
   title = null,
   warningRange = { min: 60, max: 80 },
+  rainbowRange = null,
   sections = 10,
 }) => {
   const sectionHeight = 1.0 / sections;
@@ -38,10 +39,29 @@ export const FancyBarGauge = ({
   // Round and clamp fillPct to [0, 100]
   fillPct = Math.min(Math.max(Math.round(percent), 0), 100);
 
+  const isRainbow = rainbowRange && (fillPct >= rainbowRange.min && fillPct <= rainbowRange.max);
+  const gradientStops = [
+    "rgba(179, 40, 255, 1)",
+    "rgba(255, 40, 217, 1)",
+    "rgba(255, 40, 120, 1)",
+    "rgba(255, 40, 217, 1)",
+    "rgba(179, 40, 255, 1)",
+    "rgba(76, 40, 255, 1)",
+  ];
+  // close the loop for the gradient
+  gradientStops.push(gradientStops[0]);
+  gradientStops.push(gradientStops[1]);
+  const rainbowGradient = `linear-gradient(90deg, ${gradientStops.map((c, i) => `${c} ${i * (100 / (gradientStops.length - 1))}%`).join(", ")})`;
+
   // Decide bar colour based on thresholds
-  let barColour = "bg-green-500";
-  if (fillPct >= warningRange.min && fillPct < warningRange.max) barColour = "bg-yellow-500";
-  if (fillPct >= warningRange.max) barColour = "bg-red-500";
+  // let barGradient = "bg-green-500";
+  let barGradient = "linear-gradient(in oklch 90deg, var(--color-green-600), var(--color-green-500))"; // default green
+  if (isRainbow) barGradient = rainbowGradient;
+  else if (fillPct >= warningRange.min && fillPct < warningRange.max) {
+    barGradient = "linear-gradient(in oklch 90deg, var(--color-amber-500), var(--color-yellow-400))";
+  } else if (fillPct >= warningRange.max) {
+    barGradient = "linear-gradient(in oklch 90deg, var(--color-red-600), var(--color-orange-600))";
+  }
 
   return (
     <div className="flex flex-col items-center rounded" title={title}>
@@ -52,11 +72,18 @@ export const FancyBarGauge = ({
               .map((fillPct, i) => (
             <div
               key={i}
-              className={`w-full relative h-1 flex-grow bg-zinc-700`}
+              className={`w-full relative h-1 flex-grow bg-zinc-700 overflow-hidden`}
             >
               <div
-                className={`absolute bottom-0 left-0 w-full border-t-white/10 ${barColour} ${fillPct > 0 ? ('border-b-[1px] border-b-black/5 ' + (fillPct >= 100 ? 'border-t-[2px]' : 'border-t-[1px]')) : ''}`}
-                style={{ height: `${fillPct}%` }}
+                className={`absolute bottom-0 left-0 w-full border-t-white/10 ${fillPct > 0 ? ('border-b-[1px] border-b-black/5 ' + (fillPct >= 100 ? 'border-t-[2px]' : 'border-t-[1px]')) : ''}`}
+                style={{
+                  height: `${fillPct}%`,
+                  background: barGradient,
+                  left: 0,
+                  width: isRainbow ? `${500 + (500/(gradientStops.length - 2))}px` : "100%",
+                  animation: isRainbow ? `slide 6s cubic-bezier(.3,0,.7,1) infinite alternate -${i * 0.2}s` : "none",
+
+                }}
               />
               {fillPct >= 100 && (
                 <div
@@ -184,7 +211,7 @@ const MachineCard = ({
     } else if (summary.cpu.util >= warningRanges.CPU.min) {
       machineWarnings.push("CPU usage getting high, please be considerate of your usage.");
     }
-    if ((numGpus - numBurningGpus) > 1 && numFreeGpus <= 1 && !isBurning) {
+    if ((numGpus - numBurningGpus) > 0 && numFreeGpus < 1 && !isBurning) {
       machineWarnings.push("Many GPUs are in use right now, please consider freeing some up.");
     }
     if (getNotAlive(machine.timestamp, ALIVE_WARNING_RANGE)) {
@@ -224,6 +251,7 @@ const MachineCard = ({
       title: summary.gpu.display,
       percent: summary.gpu.util,
       warningRange: warningRanges.GPU,
+      rainbowRange: { min: 90, max: 100},
     },
     {
       key: "ram",

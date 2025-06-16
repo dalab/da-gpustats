@@ -9,3 +9,13 @@ body {
   font-family: sans-serif;
   background-color: var(--color-zinc-900);
 }
+
+
+@keyframes slide {
+  from {
+    transform: translateX(-500px);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
