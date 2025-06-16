@@ -179,7 +179,7 @@ const MachineCard = ({
       machineWarnings.push("CPU usage getting high, please be considerate in your usage.");
     }
     if (numGpus > 1 && numFreeGpus <= 1) {
-      machineWarnings.push("Many GPUs are in use right now, please be considerate in your usage.");
+      machineWarnings.push("Many GPUs are in use right now, please consider freeing some up.");
     }
     if (getNotAlive(machine.timestamp, ALIVE_WARNING_RANGE)) {
       machineErrors.push("Machine is not responding, it may be unavailable.");
