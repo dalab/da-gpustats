@@ -169,9 +169,9 @@ const MachineCard = ({
     const isBurning = numGpus > 0 && machine.gpus.every((gpu) => gpu.utilization >= 90);
 
     if (summary.hdd.util >= warningRanges.HDD.max) {
-      machineErrors.push("Disk storage is full, please clean up!");
+      machineErrors.push("Disk is full, please clean up!");
     } else if (summary.hdd.util >= warningRanges.HDD.min) {
-      machineWarnings.push("Disk storage is getting full, please clean up!");
+      machineWarnings.push("Disk is almost full, please be considerate in your usage.");
     }
     if (summary.cpu.util >= warningRanges.CPU.max) {
       machineErrors.push("CPU is overloaded, please reduce your number of workers!");
@@ -179,7 +179,7 @@ const MachineCard = ({
       machineWarnings.push("CPU usage getting high, please be considerate in your usage.");
     }
     if (numGpus > 1 && numFreeGpus <= 1) {
-      machineWarnings.push("Many GPUs are in use right now. Please be considerate and kill some jobs if you can.");
+      machineWarnings.push("Many GPUs are in use right now, please be considerate in your usage.");
     }
     if (getNotAlive(machine.timestamp, ALIVE_WARNING_RANGE)) {
       machineErrors.push("Machine is not responding, it may be unavailable.");
