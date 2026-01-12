@@ -45,4 +45,24 @@ sudo journalctl -u gpustats-update.timer
 
 ### Removing an old machine from the DB
 
-To remove machines that have been taken offline, the easiest way is to just remove their entries from the DB.
+Since logs are automatically deleted after 30 days, if any machine is offline for more than 30 days, its entry will automatically disappear from the interface.
+
+Alternatively, it's possible to manually delete their logs to remove them from the interface immediately.
+To this end, connect to the mongoDB running in the `mongo` docker container on `cake`:
+```bash
+docker exec -it mongo bash
+mongo -u <user> -p <password>
+```
+The username and password is the same as the one used by the gpustat clients and can be found in `/opt/gpustats-client/.gpustatrc` on any of them.
+
+Inside the mongoDB CLI, activate the gpustat DB by running `use gpustat`.
+Check the number of logs you're about to delete:
+```
+db.machine_logs.find({machineId: "<machine_id>"}).size()
+```
+And remove the targeted logs by running:
+```
+db.machine_logs.remove({machineId: "<machine_id>"})
+```
+
+
